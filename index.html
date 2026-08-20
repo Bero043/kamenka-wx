@@ -5,191 +5,373 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Каменка — температура</title>
 <meta name="description" content="Текущая температура воздуха в Каменке, Приморский район, Санкт-Петербург">
-<meta name="theme-color" content="#0f1115">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌡️</text></svg>">
+<meta name="theme-color" content="#0e4b8f" id="theme-color">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap">
 <style>
   :root {
-    --bg: #0f1115;
-    --accent: 210;
-    --fg: #f2f4f8;
-    --muted: #8b93a3;
+    --sky-1: #0e4b8f;
+    --sky-2: #2f7cc0;
+    --sky-3: #a8cfeb;
+    --cloud: 0.55;
+    --warm: 0;
+    --fg: #fff;
+    --muted: rgba(255, 255, 255, 0.82);
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html, body { height: 100%; }
-
   body {
-    display: grid;
-    place-items: center;
     min-height: 100svh;
-    padding: 6vmin;
-    background: var(--bg);
+    background: var(--sky-1);
     color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--sans);
     font-feature-settings: "tnum" 1;
     -webkit-font-smoothing: antialiased;
     text-align: center;
-    overflow: hidden;
-    transition: background 1.2s ease;
   }
 
-  /* мягкое свечение позади цифр, цвет зависит от температуры */
-  body::before {
-    content: "";
-    position: fixed;
+  /* ——— небо ——— */
+  .sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+
+  .gradient {
+    position: absolute;
     inset: 0;
-    background: radial-gradient(
-      circle at 50% 42%,
-      hsl(var(--accent) 80% 52% / 0.30),
-      transparent 62%
-    );
-    transition: background 1.2s ease;
+    background: linear-gradient(to bottom, var(--sky-1) 0%, var(--sky-2) 52%, var(--sky-3) 100%);
+    transition: background 2.4s ease;
+  }
+
+  .clouds {
+    position: absolute;
+    top: -12%;
+    left: -25%;
+    width: 150%;
+    height: 124%;
+    opacity: var(--cloud);
+    mix-blend-mode: screen;
+    transition: opacity 2.4s ease;
+    will-change: transform;
+  }
+  .clouds.far  { animation: drift 240s ease-in-out infinite alternate; }
+  .clouds.near { animation: drift 150s ease-in-out infinite alternate-reverse; opacity: calc(var(--cloud) * 0.7); }
+
+  @keyframes drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-7%, 1.5%, 0); } }
+
+  /* тёплое свечение у горизонта — тем заметнее, чем жарче */
+  .warmth {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(85% 55% at 50% 108%, rgba(255, 172, 92, 0.6), transparent 68%);
+    opacity: var(--warm);
+    transition: opacity 2.4s ease;
+  }
+
+  /* затемнение по краям — как в фотографии, чтобы текст читался */
+  .veil {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(58% 42% at 50% 50%, rgba(2, 8, 20, 0.42), transparent 72%),
+      radial-gradient(125% 85% at 50% 44%, transparent 38%, rgba(2, 8, 20, 0.5) 100%),
+      linear-gradient(to bottom, rgba(2, 8, 20, 0.55) 0%, transparent 20%, transparent 38%, rgba(0, 0, 0, 0.8) 100%);
+  }
+
+  /* ——— каркас ——— */
+  header, footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: clamp(1.1rem, 3.5vmin, 2rem) clamp(1.2rem, 4vmin, 2.6rem);
+    font-family: var(--mono);
+    font-size: clamp(9px, 2vmin, 11px);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.68);
     pointer-events: none;
   }
+  header { top: 0; }
+  footer { bottom: 0; justify-content: center; gap: clamp(1rem, 4vmin, 2rem); }
+  footer a { color: inherit; pointer-events: auto; }
 
   main {
-    position: relative;
     display: grid;
-    gap: clamp(0.6rem, 2vmin, 1.4rem);
+    place-content: center;
     justify-items: center;
+    gap: clamp(0.9rem, 2.4vmin, 1.6rem);
+    min-height: 100svh;
+    padding: clamp(4.5rem, 12vmin, 7rem) clamp(1.2rem, 5vmin, 2.5rem);
   }
 
-  .place {
-    font-size: clamp(0.85rem, 2.4vmin, 1.05rem);
+  .badge {
+    padding: 0.5em 1.15em;
+    border-radius: 999px;
+    background: rgba(222, 238, 255, 0.9);
+    color: #123a68;
+    font-family: var(--mono);
+    font-size: clamp(9px, 2.1vmin, 11.5px);
     font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--muted);
+    backdrop-filter: blur(6px);
   }
-  .place span { display: block; letter-spacing: 0.1em; text-transform: none; font-weight: 400; opacity: 0.75; }
 
-  .temp {
-    font-size: clamp(5rem, 26vmin, 16rem);
-    font-weight: 200;
-    line-height: 0.95;
-    letter-spacing: -0.04em;
+  .display {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(4.4rem, 19vmin, 12.5rem);
+    line-height: 0.88;
+    letter-spacing: -0.025em;
+    text-shadow: 0 2px 50px rgba(0, 12, 30, 0.3);
     white-space: nowrap;
   }
-  .temp .unit { font-weight: 200; opacity: 0.45; }
-
-  .condition {
-    font-size: clamp(1rem, 3.4vmin, 1.5rem);
-    font-weight: 400;
-    color: var(--fg);
-    opacity: 0.9;
+  .display em {
+    display: block;
+    font-style: italic;
+    font-size: 0.34em;
+    line-height: 1.25;
+    letter-spacing: 0;
+    opacity: 0.94;
   }
 
-  .details {
+  .lede {
+    max-width: 30ch;
+    font-size: clamp(1rem, 2.7vmin, 1.2rem);
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .lede b { font-weight: 500; color: #fff; }
+
+  /* ——— стеклянная панель ——— */
+  .panel {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: clamp(1rem, 4vmin, 2.5rem);
-    margin-top: clamp(0.5rem, 2vmin, 1.2rem);
-    font-size: clamp(0.8rem, 2.2vmin, 0.95rem);
-    color: var(--muted);
+    align-items: center;
+    gap: clamp(1.1rem, 4vmin, 2.6rem);
+    margin-top: clamp(0.4rem, 2vmin, 1rem);
+    padding: 0.55rem 0.55rem 0.55rem clamp(1.3rem, 4vmin, 2rem);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    box-shadow: 0 24px 70px rgba(0, 10, 25, 0.28);
   }
-  .details div { display: grid; gap: 0.35em; }
-  .details b { font-weight: 500; color: var(--fg); font-size: 1.15em; }
-
-  footer {
-    position: fixed;
-    bottom: clamp(1rem, 4vmin, 2rem);
-    left: 0;
-    right: 0;
-    font-size: 0.75rem;
-    color: var(--muted);
-    opacity: 0.7;
+  .metric { display: grid; gap: 0.35em; font-family: var(--mono); }
+  .metric span {
+    font-size: clamp(8.5px, 1.9vmin, 10px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.66);
   }
-  footer a { color: inherit; }
+  .metric b { font-size: clamp(0.95rem, 2.5vmin, 1.1rem); font-weight: 500; }
 
-  .loading .temp, .loading .condition, .loading .details { opacity: 0.35; }
-  .error .temp { font-size: clamp(2rem, 8vmin, 4rem); }
+  .refresh {
+    flex: none;
+    width: clamp(38px, 9vmin, 46px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.25s ease;
+  }
+  .refresh:hover { background: rgba(255, 255, 255, 0.34); }
+  .refresh:active { transform: scale(0.94); }
+  .refresh svg { width: 45%; }
+  .busy .refresh svg { animation: spin 0.9s linear infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ——— появление ——— */
+  .badge, .display, .lede, .panel { animation: rise 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .display { animation-delay: 0.08s; }
+  .lede    { animation-delay: 0.16s; }
+  .panel   { animation-delay: 0.24s; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  .loading .display, .loading .lede { opacity: 0.5; }
+  .error .display { font-size: clamp(2rem, 8vmin, 3.4rem); white-space: normal; }
+
+  @media (max-width: 420px) {
+    .panel { gap: 1rem; padding-left: 1.1rem; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    body, body::before { transition: none; }
+    .clouds { animation: none; }
+    .badge, .display, .lede, .panel { animation: none; }
+    .gradient, .clouds, .warmth { transition: none; }
   }
 </style>
 </head>
 <body class="loading">
-  <main>
-    <h1 class="place">Каменка<span>Приморский район, Санкт-Петербург</span></h1>
-    <div class="temp" id="temp">—<span class="unit">°</span></div>
-    <div class="condition" id="condition">загружаем…</div>
-    <div class="details" id="details" hidden>
-      <div>ощущается<b id="feels">—</b></div>
-      <div>влажность<b id="humidity">—</b></div>
-      <div>ветер<b id="wind">—</b></div>
-    </div>
-  </main>
-  <footer>обновлено <span id="updated">—</span> · данные <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></footer>
+
+<div class="sky" aria-hidden="true">
+  <div class="gradient"></div>
+  <svg class="clouds far" viewBox="0 0 600 400" preserveAspectRatio="none">
+    <filter id="cf" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.024" numOctaves="6" seed="17"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 5.5 -2.05"/>
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
+    <linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.1"/>
+      <stop offset="0.4" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.3"/>
+    </linearGradient>
+    <mask id="cm"><rect width="600" height="400" fill="url(#mg)"/></mask>
+    <g mask="url(#cm)"><rect width="600" height="400" filter="url(#cf)"/></g>
+  </svg>
+  <svg class="clouds near" viewBox="0 0 600 400" preserveAspectRatio="none">
+    <filter id="cf2" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.005 0.013" numOctaves="5" seed="41"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 4.2 -1.55"/>
+      <feGaussianBlur stdDeviation="1.2"/>
+    </filter>
+    <linearGradient id="mg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="#fff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.55"/>
+    </linearGradient>
+    <mask id="cm2"><rect width="600" height="400" fill="url(#mg2)"/></mask>
+    <g mask="url(#cm2)"><rect width="600" height="400" filter="url(#cf2)"/></g>
+  </svg>
+  <div class="warmth"></div>
+  <div class="veil"></div>
+</div>
+
+<header>
+  <span>Каменка&nbsp;wx</span>
+  <span id="clock">—</span>
+</header>
+
+<main>
+  <p class="badge">Санкт-Петербург · Приморский район</p>
+  <h1 class="display"><em>Каменка</em><span id="temp" aria-live="polite">—°</span></h1>
+  <p class="lede" id="lede">Загружаем погоду…</p>
+
+  <div class="panel">
+    <div class="metric"><span>ощущается</span><b id="feels">—</b></div>
+    <div class="metric"><span>влажность</span><b id="humidity">—</b></div>
+    <div class="metric"><span>ветер</span><b id="wind">—</b></div>
+    <button class="refresh" id="refresh" type="button" title="Обновить" aria-label="Обновить">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 1 1-3.2-6.9"/><path d="M21 3v6h-6"/>
+      </svg>
+    </button>
+  </div>
+</main>
+
+<footer>
+  <span>Обновляется каждые 5 минут</span>
+  <span>Данные <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></span>
+</footer>
 
 <script>
   // Каменка, Приморский район, Санкт-Петербург
   const LAT = 60.045, LON = 30.243;
-  const URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
-    `&wind_speed_unit=ms&timezone=Europe%2FMoscow`;
+  const API = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover,is_day` +
+    `&daily=sunrise,sunset&forecast_days=1&wind_speed_unit=ms&timezone=Europe%2FMoscow`;
 
   const WMO = {
-    0: "ясно", 1: "почти ясно", 2: "переменная облачность", 3: "облачно",
-    45: "туман", 48: "изморозь",
-    51: "слабая морось", 53: "морось", 55: "сильная морось",
-    56: "ледяная морось", 57: "ледяная морось",
-    61: "небольшой дождь", 63: "дождь", 65: "сильный дождь",
-    66: "ледяной дождь", 67: "ледяной дождь",
-    71: "небольшой снег", 73: "снег", 75: "сильный снег", 77: "снежные зёрна",
-    80: "ливень", 81: "ливень", 82: "сильный ливень",
-    85: "снежный ливень", 86: "сильный снежный ливень",
-    95: "гроза", 96: "гроза с градом", 99: "гроза с градом"
+    0: "Ясно", 1: "Почти ясно", 2: "Переменная облачность", 3: "Облачно",
+    45: "Туман", 48: "Изморозь",
+    51: "Слабая морось", 53: "Морось", 55: "Сильная морось",
+    56: "Ледяная морось", 57: "Ледяная морось",
+    61: "Небольшой дождь", 63: "Дождь", 65: "Сильный дождь",
+    66: "Ледяной дождь", 67: "Ледяной дождь",
+    71: "Небольшой снег", 73: "Снег", 75: "Сильный снег", 77: "Снежные зёрна",
+    80: "Ливень", 81: "Ливень", 82: "Сильный ливень",
+    85: "Снежный ливень", 86: "Сильный снежный ливень",
+    95: "Гроза", 96: "Гроза с градом", 99: "Гроза с градом"
   };
 
-  // холод → синий, тепло → янтарный; зелёная зона спектра пропущена
-  const hueFor = t => {
-    if (t <= 12) {
-      const k = Math.min(1, Math.max(0, (t + 25) / 37));   // −25…12 → 215…165
-      return Math.round(215 - 50 * k);
-    }
-    const k = Math.min(1, (t - 12) / 18);                  // 12…30 → 45…8
-    return Math.round(45 - 37 * k);
+  // палитры неба: [зенит, середина, горизонт] — ясное и затянутое состояние
+  const SKIES = {
+    day:      [["#0d4a90", "#2f7cc0", "#a8cfeb"], ["#27506f", "#5e8399", "#c0cad2"]],
+    twilight: [["#0d1a38", "#42476f", "#d99060"], ["#141c30", "#3d4356", "#9d8177"]],
+    night:    [["#02060e", "#0a1526", "#22405f"], ["#080c14", "#141b26", "#2a3340"]]
+  };
+
+  const mix = (a, b, k) => {
+    const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const [r1, g1, b1] = p(a), [r2, g2, b2] = p(b);
+    const c = (x, y) => Math.round(x + (y - x) * k).toString(16).padStart(2, "0");
+    return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
+  };
+
+  const minutes = iso => {
+    const [h, m] = iso.slice(11, 16).split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const phase = (now, sunrise, sunset, isDay) => {
+    const near = Math.min(Math.abs(now - sunrise), Math.abs(now - sunset));
+    if (near <= 70) return "twilight";
+    return isDay ? "day" : "night";
   };
 
   const fmt = n => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(n);
+  const signed = n => (n > 0 ? "+" : n < 0 ? "−" : "") + fmt(Math.abs(n));
   const el = id => document.getElementById(id);
 
   async function load() {
+    document.body.classList.add("busy");
     try {
-      const res = await fetch(URL, { cache: "no-store" });
+      const res = await fetch(API, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const { current: c } = await res.json();
+      const data = await res.json();
+      const c = data.current;
 
       const t = Math.round(c.temperature_2m * 10) / 10;
-      const sign = t > 0 ? "+" : "";
+      const feels = Math.round(c.apparent_temperature);
 
-      el("temp").innerHTML = `${sign}${fmt(t)}<span class="unit">°</span>`;
-      el("condition").textContent = WMO[c.weather_code] ?? "—";
-      el("feels").textContent = `${c.apparent_temperature > 0 ? "+" : ""}${fmt(Math.round(c.apparent_temperature))}°`;
+      el("temp").textContent = `${signed(t)}°`;
+      el("feels").textContent = `${signed(feels)}°`;
       el("humidity").textContent = `${c.relative_humidity_2m}%`;
       el("wind").textContent = `${fmt(Math.round(c.wind_speed_10m))} м/с`;
-      el("details").hidden = false;
 
-      el("updated").textContent = new Date(c.time + "+03:00").toLocaleTimeString("ru-RU", {
-        hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow"
-      }) + " МСК";
+      const time = c.time.slice(11, 16);
+      el("lede").innerHTML = `<b>${WMO[c.weather_code] ?? "—"}</b>, ощущается как ${signed(feels)}°.<br>Данные на ${time} по Москве.`;
+      el("clock").textContent = `${time} мск`;
 
-      document.documentElement.style.setProperty("--accent", hueFor(t));
-      document.title = `${sign}${fmt(t)}° · Каменка`;
-      document.body.className = "";
+      // небо: фаза суток + реальная облачность
+      const kind = phase(minutes(c.time), minutes(data.daily.sunrise[0]), minutes(data.daily.sunset[0]), c.is_day === 1);
+      const [clear, overcast] = SKIES[kind];
+      const cc = Math.min(1, Math.max(0, c.cloud_cover / 100));
+      const root = document.documentElement.style;
+      [0, 1, 2].forEach(i => root.setProperty(`--sky-${i + 1}`, mix(clear[i], overcast[i], cc * 0.85)));
+      root.setProperty("--cloud", (0.1 + 0.5 * cc) * (kind === "night" ? 0.5 : 1));
+      root.setProperty("--warm", kind === "twilight" ? 0.5 : Math.min(0.45, Math.max(0, (t - 18) / 28)));
+
+      el("theme-color").setAttribute("content", mix(clear[0], overcast[0], cc * 0.85));
+      document.title = `${signed(t)}° · Каменка`;
+      document.body.classList.remove("loading", "error");
     } catch (e) {
       document.body.className = "error";
-      el("temp").textContent = "нет данных";
-      el("condition").textContent = "не удалось получить погоду";
-      el("updated").textContent = "—";
+      el("temp").textContent = "Нет данных";
+      el("lede").textContent = "Не удалось получить погоду. Попробуйте обновить.";
+    } finally {
+      setTimeout(() => document.body.classList.remove("busy"), 500);
     }
   }
 
-  load();
-  setInterval(load, 5 * 60 * 1000);                     // обновление раз в 5 минут
+  el("refresh").addEventListener("click", load);
   document.addEventListener("visibilitychange", () => !document.hidden && load());
+  setInterval(load, 5 * 60 * 1000);
+  load();
 </script>
 </body>
 </html>
