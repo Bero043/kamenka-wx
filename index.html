@@ -302,7 +302,7 @@
   const SKIES = {
     day:      [["#0d4a90", "#2f7cc0", "#a8cfeb"], ["#27506f", "#5e8399", "#c0cad2"]],
     twilight: [["#0d1a38", "#42476f", "#d99060"], ["#141c30", "#3d4356", "#9d8177"]],
-    night:    [["#02060e", "#0a1526", "#22405f"], ["#080c14", "#141b26", "#2a3340"]]
+    night:    [["#03101f", "#0a2036", "#1d4064"], ["#0a141f", "#16222e", "#2b3846"]]
   };
 
   const mix = (a, b, k) => {
@@ -353,7 +353,7 @@
       const cc = Math.min(1, Math.max(0, c.cloud_cover / 100));
       const root = document.documentElement.style;
       [0, 1, 2].forEach(i => root.setProperty(`--sky-${i + 1}`, mix(clear[i], overcast[i], cc * 0.85)));
-      root.setProperty("--cloud", (0.1 + 0.5 * cc) * (kind === "night" ? 0.5 : 1));
+      root.setProperty("--cloud", (0.1 + 0.5 * cc) * (kind === "night" ? 0.3 : 1));
       root.setProperty("--warm", kind === "twilight" ? 0.5 : Math.min(0.45, Math.max(0, (t - 18) / 28)));
 
       el("theme-color").setAttribute("content", mix(clear[0], overcast[0], cc * 0.85));
