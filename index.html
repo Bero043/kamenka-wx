@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Каменка — температура</title>
+<meta name="description" content="Текущая температура воздуха в Каменке, Приморский район, Санкт-Петербург">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌡️</text></svg>">
+<style>
+  :root {
+    --bg: #0f1115;
+    --accent: 210;
+    --fg: #f2f4f8;
+    --muted: #8b93a3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+    padding: 6vmin;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+    overflow: hidden;
+    transition: background 1.2s ease;
+  }
+
+  /* мягкое свечение позади цифр, цвет зависит от температуры */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+      circle at 50% 42%,
+      hsl(var(--accent) 80% 52% / 0.30),
+      transparent 62%
+    );
+    transition: background 1.2s ease;
+    pointer-events: none;
+  }
+
+  main {
+    position: relative;
+    display: grid;
+    gap: clamp(0.6rem, 2vmin, 1.4rem);
+    justify-items: center;
+  }
+
+  .place {
+    font-size: clamp(0.85rem, 2.4vmin, 1.05rem);
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .place span { display: block; letter-spacing: 0.1em; text-transform: none; font-weight: 400; opacity: 0.75; }
+
+  .temp {
+    font-size: clamp(5rem, 26vmin, 16rem);
+    font-weight: 200;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
+  .temp .unit { font-weight: 200; opacity: 0.45; }
+
+  .condition {
+    font-size: clamp(1rem, 3.4vmin, 1.5rem);
+    font-weight: 400;
+    color: var(--fg);
+    opacity: 0.9;
+  }
+
+  .details {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1rem, 4vmin, 2.5rem);
+    margin-top: clamp(0.5rem, 2vmin, 1.2rem);
+    font-size: clamp(0.8rem, 2.2vmin, 0.95rem);
+    color: var(--muted);
+  }
+  .details div { display: grid; gap: 0.35em; }
+  .details b { font-weight: 500; color: var(--fg); font-size: 1.15em; }
+
+  footer {
+    position: fixed;
+    bottom: clamp(1rem, 4vmin, 2rem);
+    left: 0;
+    right: 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  footer a { color: inherit; }
+
+  .loading .temp, .loading .condition, .loading .details { opacity: 0.35; }
+  .error .temp { font-size: clamp(2rem, 8vmin, 4rem); }
+
+  @media (prefers-reduced-motion: reduce) {
+    body, body::before { transition: none; }
+  }
+</style>
+</head>
+<body class="loading">
+  <main>
+    <h1 class="place">Каменка<span>Приморский район, Санкт-Петербург</span></h1>
+    <div class="temp" id="temp">—<span class="unit">°</span></div>
+    <div class="condition" id="condition">загружаем…</div>
+    <div class="details" id="details" hidden>
+      <div>ощущается<b id="feels">—</b></div>
+      <div>влажность<b id="humidity">—</b></div>
+      <div>ветер<b id="wind">—</b></div>
+    </div>
+  </main>
+  <footer>обновлено <span id="updated">—</span> · данные <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></footer>
+
+<script>
+  // Каменка, Приморский район, Санкт-Петербург
+  const LAT = 60.045, LON = 30.243;
+  const URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
+    `&wind_speed_unit=ms&timezone=Europe%2FMoscow`;
+
+  const WMO = {
+    0: "ясно", 1: "почти ясно", 2: "переменная облачность", 3: "облачно",
+    45: "туман", 48: "изморозь",
+    51: "слабая морось", 53: "морось", 55: "сильная морось",
+    56: "ледяная морось", 57: "ледяная морось",
+    61: "небольшой дождь", 63: "дождь", 65: "сильный дождь",
+    66: "ледяной дождь", 67: "ледяной дождь",
+    71: "небольшой снег", 73: "снег", 75: "сильный снег", 77: "снежные зёрна",
+    80: "ливень", 81: "ливень", 82: "сильный ливень",
+    85: "снежный ливень", 86: "сильный снежный ливень",
+    95: "гроза", 96: "гроза с градом", 99: "гроза с градом"
+  };
+
+  // холод → синий, тепло → янтарный; зелёная зона спектра пропущена
+  const hueFor = t => {
+    if (t <= 12) {
+      const k = Math.min(1, Math.max(0, (t + 25) / 37));   // −25…12 → 215…165
+      return Math.round(215 - 50 * k);
+    }
+    const k = Math.min(1, (t - 12) / 18);                  // 12…30 → 45…8
+    return Math.round(45 - 37 * k);
+  };
+
+  const fmt = n => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(n);
+  const el = id => document.getElementById(id);
+
+  async function load() {
+    try {
+      const res = await fetch(URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const { current: c } = await res.json();
+
+      const t = Math.round(c.temperature_2m * 10) / 10;
+      const sign = t > 0 ? "+" : "";
+
+      el("temp").innerHTML = `${sign}${fmt(t)}<span class="unit">°</span>`;
+      el("condition").textContent = WMO[c.weather_code] ?? "—";
+      el("feels").textContent = `${c.apparent_temperature > 0 ? "+" : ""}${fmt(Math.round(c.apparent_temperature))}°`;
+      el("humidity").textContent = `${c.relative_humidity_2m}%`;
+      el("wind").textContent = `${fmt(Math.round(c.wind_speed_10m))} м/с`;
+      el("details").hidden = false;
+
+      el("updated").textContent = new Date(c.time + "+03:00").toLocaleTimeString("ru-RU", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow"
+      }) + " МСК";
+
+      document.documentElement.style.setProperty("--accent", hueFor(t));
+      document.title = `${sign}${fmt(t)}° · Каменка`;
+      document.body.className = "";
+    } catch (e) {
+      document.body.className = "error";
+      el("temp").textContent = "нет данных";
+      el("condition").textContent = "не удалось получить погоду";
+      el("updated").textContent = "—";
+    }
+  }
+
+  load();
+  setInterval(load, 5 * 60 * 1000);                     // обновление раз в 5 минут
+  document.addEventListener("visibilitychange", () => !document.hidden && load());
+</script>
+</body>
+</html>
