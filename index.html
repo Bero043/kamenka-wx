@@ -1,83 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Каменка — температура</title>
-<meta name="description" content="Текущая температура воздуха и ветер в Каменке, Приморский район, Санкт-Петербург">
-<meta name="theme-color" content="#ffffff">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌡️</text></svg>">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+<style>:root{color-scheme:light dark;font-family:system-ui,sans-serif}</style>
 
-  body {
-    display: grid;
-    place-items: center;
-    min-height: 100svh;
-    padding: 8vmin 5vmin;
-    background: #fff;
-    color: #14161a;
-    font-family: "Instrument Serif", Georgia, serif;
-    font-weight: 400;
-    text-align: center;
-  }
-
-  .temp {
-    font-size: clamp(4.4rem, 19vmin, 12.5rem);
-    font-weight: 400;
-    line-height: 0.88;
-    letter-spacing: -0.025em;
-  }
-  .temp em {
-    display: block;
-    font-size: 0.34em;
-    line-height: 1.25;
-    letter-spacing: 0;
-    color: #4a4f57;
-  }
-
-  .wind {
-    margin-top: clamp(1rem, 3.5vmin, 2.2rem);
-    font-size: clamp(1.3rem, 5vmin, 2.6rem);
-    line-height: 1.2;
-    color: #6b7280;
-  }
-</style>
-</head>
-<body>
-
-<main>
-  <h1 class="temp"><em>Каменка</em><span id="temp" aria-live="polite">—°</span></h1>
-  <p class="wind" id="wind">Ветер —</p>
-</main>
+<h1 id="temp">—°</h1>
+<p id="wind">Ветер —</p>
 
 <script>
-  // Каменка, Приморский район, Санкт-Петербург
-  const API = "https://api.open-meteo.com/v1/forecast?latitude=60.045&longitude=30.243" +
-    "&current=temperature_2m,wind_speed_10m&wind_speed_unit=ms&timezone=Europe%2FMoscow";
+const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045&longitude=30.243&current=temperature_2m,wind_speed_10m&wind_speed_unit=ms")
+  .then(r => r.json())
+  .then(({ current: c }) => {
+    const t = Math.round(c.temperature_2m * 10) / 10;
+    temp.textContent = (t > 0 ? "+" : "") + String(t).replace(".", ",") + "°";
+    wind.textContent = `Ветер ${Math.round(c.wind_speed_10m)} м/с`;
+  })
+  .catch(() => wind.textContent = "Нет данных");
 
-  async function load() {
-    try {
-      const res = await fetch(API, { cache: "no-store" });
-      if (!res.ok) throw new Error(res.status);
-      const c = (await res.json()).current;
-
-      const t = Math.round(c.temperature_2m * 10) / 10;
-      const temp = (t > 0 ? "+" : t < 0 ? "−" : "") + String(Math.abs(t)).replace(".", ",") + "°";
-
-      document.getElementById("temp").textContent = temp;
-      document.getElementById("wind").textContent = `Ветер ${Math.round(c.wind_speed_10m)} м/с`;
-      document.title = `${temp} · Каменка`;
-    } catch {
-      document.getElementById("temp").textContent = "—°";
-      document.getElementById("wind").textContent = "Нет данных";
-    }
-  }
-
-  load();
-  setInterval(load, 5 * 60 * 1000);
-  document.addEventListener("visibilitychange", () => !document.hidden && load());
+load();
+setInterval(load, 300000);
 </script>
-</body>
-</html>
