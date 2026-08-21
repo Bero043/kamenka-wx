@@ -5,8 +5,8 @@
 <title>Каменка — температура</title>
 <style>:root{color-scheme:light}body{margin:0;min-height:100svh;display:grid;place-content:center;text-align:center;background:#fff;color:#000;font-family:system-ui,sans-serif}</style>
 
-<h1 id="temp">—°</h1>
-<p id="wind">Ветер —</p>
+<h1>Каменка<br><span id="temp">—°</span></h1>
+<p id="wind">—</p>
 
 <script>
 const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045&longitude=30.243&current=temperature_2m,wind_speed_10m&wind_speed_unit=ms")
@@ -14,7 +14,7 @@ const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045
   .then(({ current: c }) => {
     const t = Math.round(c.temperature_2m * 10) / 10;
     temp.textContent = (t > 0 ? "+" : "") + String(t).replace(".", ",") + "°";
-    wind.textContent = `Ветер ${Math.round(c.wind_speed_10m)} м/с`;
+    wind.textContent = `${Math.round(c.wind_speed_10m)} м/с`;
   })
   .catch(() => wind.textContent = "Нет данных");
 
