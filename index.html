@@ -19,7 +19,7 @@
   .tile { border-radius: 3px; padding: clamp(.4rem, .8vw, .6rem); color: #fff; container-type: inline-size;
           display: flex; flex-direction: column; justify-content: space-between; gap: .2rem; overflow: hidden }
   .top { display: flex; align-items: flex-start; justify-content: space-between; gap: .25rem }
-  .tile b { min-width: 0; font-weight: 600; font-size: clamp(.95rem, 13.5cqw, 1.75rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
+  .tile b { min-width: 0; font-weight: 600; font-size: clamp(1rem, 18cqw, 2.3rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
   .tile span { font-family: "Space Mono", monospace; font-size: clamp(9px, 6cqw, 12.5px); opacity: .9 }
   .ico { flex: none; width: clamp(14px, 9cqw, 22px); height: auto; opacity: .75 }
 
@@ -27,7 +27,7 @@
   .shut { background: var(--shut) } .idle { background: var(--idle) } .flat { background: var(--flat) }
 
   .wide { grid-column: span 2 }
-  .wide b { font-size: clamp(.95rem, 7cqw, 1.85rem) }
+  .wide b { font-size: clamp(1rem, 9cqw, 2.3rem) }
   .wide .ico { width: clamp(14px, 4.5cqw, 22px) }
   .val { font-family: "Space Mono", monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
@@ -43,8 +43,9 @@
   @media (max-width: 620px) {
     .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
     .wide { grid-column: span 2 }
-  .wide b { font-size: clamp(.95rem, 7cqw, 1.85rem) }
-  .wide .ico { width: clamp(14px, 4.5cqw, 22px) }
+    /* на телефоне ряд ~80px — крупнее текст не влезает */
+    .tile b { font-size: clamp(.85rem, 14cqw, 1.3rem) }
+    .wide b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
   }
 </style>
 
