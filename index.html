@@ -1,24 +1,63 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Каменка — температура</title>
-<style>:root{color-scheme:light}body{margin:0;min-height:100svh;display:grid;place-content:center;text-align:center;background:#fff;color:#000;font-family:system-ui,sans-serif}</style>
+<title>Kamenka · Petrogradka</title>
+<meta name="description" content="Live temperature and wind in Kamenka and Petrogradka, Saint Petersburg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌡️</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Space+Mono&display=swap">
+<style>
+  :root { color-scheme: light; font-family: "Space Grotesk", sans-serif }
+  body { margin: 0; min-height: 100svh; display: grid; place-content: center; padding: 2rem; background: #fff; color: #111; font-size: clamp(1.05rem, 1.5vw, 1.35rem) }
+  .places { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4rem; max-width: 40rem }
+  .head { display: flex; align-items: center; gap: .5rem; margin-bottom: 1em }
+  .name { font-weight: 600 }
+  .temp, .time { font-family: "Space Mono", monospace; font-size: .8em }
+  .temp { display: flex; align-items: center; gap: .35rem }
+  .time { color: #8a8a8a; margin-top: .35em }
+  svg { width: 1.15em; height: 1.15em }
+  .blink { animation: blink 1s steps(1) infinite }
+  @keyframes blink { 0%, to { opacity: 1 } 50% { opacity: 0 } }
+  @media (max-width: 480px) { .places { grid-template-columns: 1fr; gap: 2.5rem } }
+</style>
 
-<p>Каменка</p>
-<h1 id="temp">—°</h1>
-<p id="wind">—</p>
+<div class="places" id="app"></div>
 
 <script>
-const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045&longitude=30.243&current=temperature_2m,wind_speed_10m&wind_speed_unit=ms")
-  .then(r => r.json())
-  .then(({ current: c }) => {
-    const t = Math.round(c.temperature_2m * 10) / 10;
-    temp.textContent = (t > 0 ? "+" : "") + String(t).replace(".", ",") + "°";
-    wind.textContent = `${Math.round(c.wind_speed_10m)} м/с`;
-  })
-  .catch(() => wind.textContent = "Нет данных");
+  const PLACES = [["Kamenka", 60.045, 30.243], ["Petrogradka", 59.96, 30.31]];
 
-load();
-setInterval(load, 300000);
+  const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M19.4 4.6l-2.1 2.1M6.7 17.3l-2.1 2.1"/></svg>';
+  const CLOUD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 20A5.5 5.5 0 0 1 6 9a6.5 6.5 0 0 1 12.3 1.6A4.7 4.7 0 0 1 17.5 20z"/></svg>';
+  const RAIN = CLOUD.replace("</svg>", '<path d="M8 21.5l-.8 2M12 21.5l-.8 2M16 21.5l-.8 2" stroke="currentColor" stroke-width="1.6"/></svg>');
+
+  const icon = code => code >= 51 ? RAIN : code >= 2 ? CLOUD : SUN;
+  const clock = () => new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })
+    .format(new Date()).split(":");
+
+  const render = data => {
+    const [h, m] = clock();
+    app.innerHTML = PLACES.map(([name], i) => {
+      const c = data?.[i]?.current;
+      const temp = c ? `${c.temperature_2m > 0 ? "+" : ""}${c.temperature_2m.toFixed(1)}°C` : "—";
+      const wind = c ? `Wind ${Math.round(c.wind_speed_10m)} m/s` : "No data";
+      return `<div>
+        <div class="head"><span class="name">${name}</span>
+          <span class="temp">${c ? icon(c.weather_code) : ""}${temp}</span></div>
+        <div>${wind}</div>
+        <div class="time">${h}<span class="blink">:</span>${m} (GMT+3)</div>
+      </div>`;
+    }).join("");
+  };
+
+  let last = null;
+
+  const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045,59.96&longitude=30.243,30.31" +
+    "&current=temperature_2m,wind_speed_10m,weather_code&wind_speed_unit=ms&timezone=Europe%2FMoscow")
+    .then(r => r.json())
+    .then(d => render(last = d))
+    .catch(() => render(last));
+
+  load();
+  setInterval(load, 300000);          // погода
+  setInterval(() => render(last), 30000);   // часы
 </script>
