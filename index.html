@@ -16,10 +16,23 @@
   .temp svg { width: 1.15em; height: 1.15em }
   .arrow { width: 1.25em; height: 1.25em; margin-top: .5em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
+  .extra { max-width: 40rem; margin-top: 3.5rem; display: grid; gap: 1.1rem }
+  .brent { display: flex; align-items: center; gap: .45rem; font-family: "Space Mono", monospace; font-size: .8em }
+  .brent svg { width: 1.15em; height: 1.15em }
+  .news { color: inherit; text-decoration: none; line-height: 1.35; border-bottom: 1px solid #ddd; padding-bottom: .15em; justify-self: start }
+  .news:hover { border-color: #111 }
   @media (max-width: 480px) { .places { grid-template-columns: 1fr; gap: 2.5rem } }
 </style>
 
 <div class="places" id="app"></div>
+
+<div class="extra">
+  <div class="brent">
+    <svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Brent"><path d="M12 2.2c3.6 4.6 6.2 8 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 10.2 8.4 6.8 12 2.2z"/></svg>
+    <span id="brent">—</span>
+  </div>
+  <a class="news" id="news" target="_blank" rel="noopener">—</a>
+</div>
 
 <script>
   const PLACES = [["Kamenka", 60.045, 30.243], ["Petrogradka", 59.96, 30.31]];
@@ -59,6 +72,41 @@
     .then(render)
     .catch(() => render(null));
 
+  // Brent: фьючерс ближайшей серии на Мосбирже (ISS, без ключа, CORS открыт)
+  const ISS = "https://iss.moex.com/iss/engines/futures/markets/forts";
+
+  const brent = async () => {
+    const ser = await (await fetch(`https://iss.moex.com/iss/statistics/engines/futures/markets/forts/series.json?asset_code=BR&iss.meta=off`)).json();
+    const cols = ser.series.columns;
+    const today = new Date().toISOString().slice(0, 10);
+    const live = ser.series.data
+      .map(r => Object.fromEntries(r.map((v, i) => [cols[i], v])))
+      .filter(r => r.is_traded && r.expiration_date >= today)
+      .sort((a, b) => a.expiration_date < b.expiration_date ? -1 : 1)[0];
+    if (!live) throw new Error("no series");
+    const q = await (await fetch(`${ISS}/securities/${live.secid}.json?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST,SETTLEPRICE`)).json();
+    const [last, settle] = q.marketdata.data[0] ?? [];
+    const price = last || settle;
+    if (!price) throw new Error("no price");
+    document.getElementById("brent").textContent = `$${price.toFixed(2)}`;
+  };
+
+  // Топ-новость США за 24 часа: Guardian, секция us-news
+  const news = async () => {
+    const from = new Date(Date.now() - 36e5 * 30).toISOString().slice(0, 10);
+    const r = await (await fetch("https://content.guardianapis.com/search?section=us-news&order-by=newest" +
+      `&from-date=${from}&page-size=20&api-key=test`)).json();
+    const cut = Date.now() - 864e5;
+    const top = r.response.results.find(a => +new Date(a.webPublicationDate) >= cut) ?? r.response.results[0];
+    if (!top) throw new Error("empty");
+    const el = document.getElementById("news");
+    el.textContent = top.webTitle;
+    el.href = top.webUrl;
+  };
+
   load();
+  brent().catch(() => {});
+  news().catch(() => {});
   setInterval(load, 300000);
+  setInterval(() => { brent().catch(() => {}); news().catch(() => {}); }, 900000);
 </script>
