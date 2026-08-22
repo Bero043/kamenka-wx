@@ -3,114 +3,95 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Saint Petersburg — indicators</title>
-<meta name="description" content="Weather, bridge openings, museum and shop hours in Saint Petersburg">
+<meta name="description" content="Weather, bridge openings, museum and shop hours, Brent and gold">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟩</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Space+Mono&display=swap">
 <style>
   :root { color-scheme: light; font-family: "Space Grotesk", sans-serif;
-          --open: #16a34a; --soon: #eab308; --shut: #dc2626; --idle: #d4d4d4; --water: #dbeafe }
+          --open: #16a34a; --soon: #eab308; --shut: #dc2626; --idle: #9ca3af; --flat: #6b7280 }
   * { box-sizing: border-box; margin: 0; padding: 0 }
-  body { background: #fff; color: #111; padding: clamp(1.2rem, 4vw, 3rem); display: grid; justify-content: center }
-  main { width: min(100%, 52rem); display: grid; gap: 2rem }
+  body { height: 100svh; background: #fff; color: #111; padding: clamp(.4rem, 1.2vw, 1rem); overflow: hidden;
+         display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
 
-  .glabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: .18em;
-            text-transform: uppercase; color: #8a8a8a; margin-bottom: .7rem }
+  .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-rows: 1fr;
+          grid-template-columns: repeat(auto-fit, minmax(clamp(84px, 10vw, 148px), 1fr)) }
 
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: .5rem }
+  .tile { border-radius: 3px; padding: clamp(.4rem, .8vw, .6rem); color: #fff;
+          display: flex; flex-direction: column; justify-content: space-between; gap: .2rem; overflow: hidden }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: .25rem }
+  .tile b { font-weight: 600; font-size: clamp(.66rem, .85vw, .8rem); line-height: 1.12; overflow-wrap: anywhere }
+  .tile span { font-family: "Space Mono", monospace; font-size: clamp(8.5px, .72vw, 10.5px); opacity: .9 }
+  .ico { flex: none; width: clamp(13px, 1.1vw, 17px); height: auto; opacity: .8 }
 
-  .tile { aspect-ratio: 1; border-radius: 3px; padding: .55rem; display: flex; flex-direction: column;
-          justify-content: space-between; color: #fff; overflow: hidden }
-  .tile b { font-weight: 600; font-size: .76rem; line-height: 1.12; overflow-wrap: anywhere }
-  .tile span { font-family: "Space Mono", monospace; font-size: 10.5px; opacity: .9 }
   .open { background: var(--open) } .soon { background: var(--soon); color: #111 }
-  .shut { background: var(--shut) } .idle { background: var(--idle); color: #444 }
+  .shut { background: var(--shut) } .idle { background: var(--idle) } .flat { background: var(--flat) }
 
-  .wx { grid-column: span 2; aspect-ratio: auto; min-height: 92px }
-  .wx .val { font-family: "Space Mono", monospace; font-size: 1.05rem; display: flex; align-items: center; gap: .4rem }
-  .wx svg { width: 1.1em; height: 1.1em; animation: pulse 2.4s ease-in-out infinite }
+  .wide { grid-column: span 2 }
+  .val { font-family: "Space Mono", monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
+  .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
 
-  /* карта Невы */
-  .map { width: 100%; height: auto; overflow: visible }
-  .river { fill: none; stroke: var(--water); stroke-linecap: round }
-  .pt { stroke: #fff; stroke-width: 2 }
-  .pt.open { fill: var(--open) } .pt.soon { fill: var(--soon) } .pt.shut { fill: var(--shut) }
-  .lbl { font-family: "Space Grotesk", sans-serif; font-size: 11.5px; font-weight: 600; fill: #111; text-anchor: middle }
-  .lbl tspan { font-family: "Space Mono", monospace; font-size: 8.5px; font-weight: 400; fill: #666 }
-  .note { font-family: "Space Mono", monospace; font-size: 8px; fill: #8a8a8a }
+  /* новость — тонкая полоса под сеткой, одна строка */
+  .newsbar { display: flex; align-items: center; gap: .5rem; padding: .5rem .6rem; border-radius: 3px;
+             background: #f4f4f5; color: #111; text-decoration: none; font-size: clamp(.68rem, .85vw, .82rem) }
+  .newsbar b { min-width: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .newsbar .src { font-family: "Space Mono", monospace; font-size: clamp(8.5px, .7vw, 10px); color: #6b7280; flex: none }
+  .newsbar .ico { opacity: .55 }
 
-  .foot { display: grid; gap: .8rem; font-size: .9rem }
-  .brent { display: flex; align-items: center; gap: .45rem; font-family: "Space Mono", monospace; font-size: .85rem }
-  .brent svg { width: 1.1em; height: 1.1em }
-  .news { color: inherit; text-decoration: none; border-bottom: 1px solid #ddd; padding-bottom: .15em; justify-self: start; line-height: 1.35 }
-  .news:hover { border-color: #111 }
-
-  @media (max-width: 560px) {
-    .tiles { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) }
-    .tile { aspect-ratio: auto; min-height: 78px }
-    .wx { grid-column: 1 / -1; min-height: 76px }
-    .lbl { font-size: 15px } .lbl tspan { font-size: 11.5px } .note { font-size: 10px }
+  @media (max-width: 620px) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+    .wide { grid-column: span 2 }
   }
 </style>
 
-<main>
-  <section><div class="glabel">Weather</div><div class="tiles" id="wx"></div></section>
-  <section><div class="glabel">Museums</div><div class="tiles" id="museums"></div></section>
-  <section><div class="glabel">Bridges</div><div class="tiles" id="bridges"></div></section>
-  <section><div class="glabel">Shops</div><div class="tiles" id="shops"></div></section>
-  <section><div class="glabel">Bakeries</div><div class="tiles" id="bakeries"></div></section>
-  <section><div class="glabel">Neva</div><svg class="map" id="map" viewBox="0 0 620 232"></svg></section>
-  <div class="foot">
-    <div class="brent">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2c3.6 4.6 6.2 8 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 10.2 8.4 6.8 12 2.2z"/></svg>
-      <span id="brent">—</span>
-    </div>
-    <a class="news" id="news" target="_blank" rel="noopener">—</a>
-  </div>
-</main>
+<div class="grid" id="grid"></div>
+<a class="newsbar" id="newsbar" target="_blank" rel="noopener"></a>
 
 <script>
-/* ───────── SCHEDULES. Edit here ─────────
-   Seven entries starting from MONDAY. null — closed all day. */
+/* ───────── SCHEDULES. Edit here — seven entries from MONDAY, null = closed ───────── */
 
 const week = (h, closed = []) => [0, 1, 2, 3, 4, 5, 6].map(i => closed.includes(i) ? null : h);
 
 const MUSEUMS = [
-  // mon, tue, wed, thu, fri, sat, sun
   ["Hermitage",      [null, "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-19:00", "11:00-18:00"]],
   ["Russian Museum", ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
   ["Benois Wing",    ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
   ["Erarta",         week("11:00-23:00", [1])]
 ];
+const SHOPS    = [["Pyaterochka", week("08:00-23:00")], ["Perekrestok", week("08:00-23:00")]];
+const BAKERIES = [["Tsekh", week("08:00-22:00")], ["Vse Doma", week("08:00-22:00")], ["Khlebnik", week("08:00-21:00")]];
 
-const SHOPS = [
-  ["Pyaterochka", week("08:00-23:00")],
-  ["Perekrestok", week("08:00-23:00")]
-];
-
-const BAKERIES = [
-  ["Tsekh",     week("08:00-22:00")],
-  ["Vse Doma",  week("08:00-22:00")],
-  ["Khlebnik",  week("08:00-21:00")]
-];
-
-/* Bridge openings — when you CANNOT cross. Navigation season: 10 Apr — 30 Nov.
-   Third element: position on the map, side = where the label goes. */
 const NAVIGATION = ["04-10", "11-30"];
 const BRIDGES = [
-  ["Blagoveshchensky", ["01:25-02:45", "03:10-05:00"], { river: 0, at: 0.04, side: "below", short: "Blagovesh." }],
-  ["Palace",           ["01:10-02:50", "03:10-04:55"], { river: 0, at: 0.19, side: "below" }],
-  ["Trinity",          ["01:20-04:50"],                { river: 0, at: 0.31, side: "below" }],
-  ["Liteyny",          ["01:40-04:45"],                { river: 0, at: 0.42, side: "above" }],
-  ["Bolsheokhtinsky",  ["02:00-05:00"],                { river: 0, at: 0.55, side: "above", short: "Bolsheokht." }],
-  ["Al. Nevsky",       ["02:20-05:10"],                { river: 0, at: 0.68, side: "below" }],
-  ["Volodarsky",       ["02:00-03:45", "04:15-05:30"], { river: 0, at: 0.91, side: "above" }],
-  ["Birzhevoy",        ["02:00-02:55", "03:35-04:55"], { river: 1, at: 0.26, side: "above" }],
-  ["Tuchkov",          ["02:00-02:55", "03:35-04:55"], { river: 1, at: 0.82, side: "above" }],
-  ["Sampsonievsky",    ["01:30-04:30"], null],   // on request, 2 days ahead
-  ["Grenadersky",      ["01:30-04:30"], null],
-  ["Kantemirovsky",    ["01:30-04:30"], null]
+  ["Blagoveshchensky", ["01:25-02:45", "03:10-05:00"]],
+  ["Palace",           ["01:10-02:50", "03:10-04:55"]],
+  ["Trinity",          ["01:20-04:50"]],
+  ["Liteyny",          ["01:40-04:45"]],
+  ["Bolsheokhtinsky",  ["02:00-05:00"]],
+  ["Al. Nevsky",       ["02:20-05:10"]],
+  ["Volodarsky",       ["02:00-03:45", "04:15-05:30"]],
+  ["Birzhevoy",        ["02:00-02:55", "03:35-04:55"]],
+  ["Tuchkov",          ["02:00-02:55", "03:35-04:55"]],
+  ["Sampsonievsky",    ["01:30-04:30"]],   // on request, 2 days ahead
+  ["Grenadersky",      ["01:30-04:30"]],
+  ["Kantemirovsky",    ["01:30-04:30"]]
 ];
+
+/* ───────── Icons ───────── */
+
+const svg = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICO = {
+  museum:  svg('<path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20h18"/>'),
+  bridge:  svg('<path d="M2 9c5 5.5 15 5.5 20 0M2 9v11M22 9v11M7.5 13v7M12 15v5M16.5 13v7"/>'),
+  shop:    svg('<path d="M3.5 9h17l-2-5H5.5l-2 5zM5 9v11h14V9M10 20v-6h4v6"/>'),
+  bakery:  svg('<path d="M4 14c0-3.6 3.6-6 8-6s8 2.4 8 6-3.6 5-8 5-8-1.4-8-5"/><path d="M9 10.5l.8 7M12.5 9.8v8M16 10.5l-.8 7"/>'),
+  oil:     svg('<path d="M12 3c3.4 4.4 5.8 7.6 5.8 10.4a5.8 5.8 0 0 1-11.6 0C6.2 10.6 8.6 7.4 12 3z" fill="currentColor" stroke="none"/>'),
+  gold:    svg('<path d="M7 9h10l4 7H3l4-7z"/><path d="M3 16h18v3H3z"/>'),
+  sun:     svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8"/>'),
+  cloud:   svg('<path d="M6.5 19A4.5 4.5 0 0 1 6 10a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 19z" fill="currentColor" stroke="none"/>'),
+  rain:    svg('<path d="M6.5 16A4.5 4.5 0 0 1 6 7a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 16z" fill="currentColor" stroke="none"/><path d="M8.5 19l-.8 2M12 19l-.8 2M15.5 19l-.8 2"/>'),
+  news:    svg('<path d="M4 5h13v14H4zM17 9h3v8a2 2 0 0 1-3 0zM7 8.5h7M7 12h7M7 15.5h4"/>')
+};
 
 /* ───────── Logic ───────── */
 
@@ -143,91 +124,99 @@ const bridgeState = (spans, t) => {
   return ["open", `at ${spans[0].slice(0, 5)}`];
 };
 
-const tile = (name, [cls, note]) => `<div class="tile ${cls}"><b>${name}</b><span>${note}</span></div>`;
-
-/* ───────── Neva map ───────── */
-
-const RIVERS = [
-  ["M 12,138 C 88,135 148,122 198,101 C 248,80 302,82 360,90 C 410,97 446,130 480,161 C 514,191 556,204 612,212", 11],
-  ["M 194,104 C 166,86 130,66 60,48", 8]
-];
-
-const drawMap = t => {
-  const water = RIVERS.map(([d, w]) => `<path class="river" d="${d}" stroke-width="${w}"/>`).join("");
-  map.innerHTML = water;                                  // сначала русла, чтобы их можно было измерить
-  const paths = map.querySelectorAll("path.river");
-  const pins = BRIDGES.filter(b => b[2]).map(([name, spans, p]) => {
-    const path = paths[p.river];
-    const { x, y } = path.getPointAtLength(p.at * path.getTotalLength());
-    const dy = p.side === "above" ? -12 : 18;
-    return `<circle class="pt ${bridgeState(spans, t)[0]}" cx="${x}" cy="${y}" r="5"/>
-      <text class="lbl" x="${x}" y="${y + dy}">${p.short ?? name}</text>`;
-  }).join("");
-  const note = `<text class="note" x="12" y="228">Sampsonievsky, Grenadersky, Kantemirovsky — 01:30–04:30 on request, 2 days ahead</text>`;
-  map.innerHTML = water + pins + note;
-};
-
-const paint = () => {
-  const t = nowMsk();
-  museums.innerHTML = MUSEUMS.map(([n, h]) => tile(n, placeState(h, t))).join("");
-  shops.innerHTML = SHOPS.map(([n, h]) => tile(n, placeState(h, t))).join("");
-  bakeries.innerHTML = BAKERIES.map(([n, h]) => tile(n, placeState(h, t))).join("");
-  bridges.innerHTML = BRIDGES.map(([n, s]) => tile(n, bridgeState(s, t))).join("");
-  drawMap(t);
-};
+const tile = (name, [cls, note], icon, extra = "") =>
+  `<div class="tile ${cls} ${extra}"><div class="top"><b>${name}</b>${icon}</div><span>${note}</span></div>`;
 
 /* ───────── Weather ───────── */
 
 const PLACES = [["Kamenka", 60.045, 30.243], ["Petrogradka", 59.96, 30.31]];
+let wxData = null;
 
-const arrow = dir => `<svg viewBox="0 0 24 24" style="transform:rotate(${dir + 180}deg)" aria-hidden="true">
+const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${dir + 180}deg)" aria-hidden="true">
   <path d="M12 21V5M12 5l-5.4 5.4M12 5l5.4 5.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
-const weather = data => wx.innerHTML = PLACES.map(([name], i) => {
-  const c = data?.[i]?.current;
-  if (!c) return `<div class="tile wx idle"><b>${name}</b><span>no data</span></div>`;
+const wxTile = (name, c) => {
+  if (!c) return `<div class="tile idle wide"><div class="top"><b>${name}</b>${ICO.cloud}</div><span>no data</span></div>`;
   // red when cold (below +5), windy (7 m/s and up) or raining
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
+  const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
-  return `<div class="tile wx ${bad ? "shut" : "open"}">
-    <b>${name}</b>
-    <div class="val">${sign}${c.temperature_2m.toFixed(1)}°  ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} m/s</div>
-  </div>`;
-}).join("");
+  return `<div class="tile wide ${bad ? "shut" : "open"}">
+    <div class="top"><b>${name}</b>${ico}</div>
+    <div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} m/s</div></div>`;
+};
 
-const loadWeather = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045,59.96&longitude=30.243,30.31" +
-  "&current=temperature_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms")
-  .then(r => r.json()).then(weather).catch(() => weather(null));
+/* ───────── Commodities: Brent and gold from MOEX ───────── */
 
-/* ───────── Brent and news ───────── */
+const MARKET = [["Brent", "BR", ICO.oil], ["Gold", "GOLD", ICO.gold]];
+const quotes = {};   // asset -> {price, change}
 
-const brent = async () => {
-  const ser = await (await fetch("https://iss.moex.com/iss/statistics/engines/futures/markets/forts/series.json?asset_code=BR&iss.meta=off")).json();
+const loadQuote = async asset => {
+  const ser = await (await fetch(`https://iss.moex.com/iss/statistics/engines/futures/markets/forts/series.json?asset_code=${asset}&iss.meta=off`)).json();
   const cols = ser.series.columns, today = new Date().toISOString().slice(0, 10);
   const live = ser.series.data.map(r => Object.fromEntries(r.map((v, i) => [cols[i], v])))
     .filter(r => r.is_traded && r.expiration_date >= today)
     .sort((a, b) => a.expiration_date < b.expiration_date ? -1 : 1)[0];
-  const q = await (await fetch(`https://iss.moex.com/iss/engines/futures/markets/forts/securities/${live.secid}.json?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST,SETTLEPRICE`)).json();
-  const [last, settle] = q.marketdata.data[0] ?? [];
-  document.getElementById("brent").textContent = `$${(last || settle).toFixed(2)}`;
+  const q = await (await fetch(`https://iss.moex.com/iss/engines/futures/markets/forts/securities/${live.secid}.json` +
+    "?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST,SETTLEPRICE,LASTTOPREVPRICE")).json();
+  const [last, settle, chg] = q.marketdata.data[0] ?? [];
+  quotes[asset] = { price: last || settle, change: chg };
 };
 
-const topNews = async () => {
+const quoteTile = (name, asset, icon) => {
+  const q = quotes[asset];
+  if (!q?.price) return `<div class="tile idle"><div class="top"><b>${name}</b>${icon}</div><span>no data</span></div>`;
+  const cls = !q.change ? "flat" : q.change > 0 ? "open" : "shut";
+  const sign = q.change > 0 ? "+" : "";
+  return `<div class="tile ${cls}"><div class="top"><b>${name}</b>${icon}</div>
+    <div><div class="val">$${q.price.toFixed(2)}</div><span>${sign}${(q.change ?? 0).toFixed(2)}%</span></div></div>`;
+};
+
+/* ───────── Top US news ───────── */
+
+let story = null;
+
+const loadNews = async () => {
   const from = new Date(Date.now() - 36e5 * 30).toISOString().slice(0, 10);
   const r = await (await fetch("https://content.guardianapis.com/search?section=us-news&order-by=newest" +
     `&from-date=${from}&page-size=20&api-key=test`)).json();
   const cut = Date.now() - 864e5;
-  const top = r.response.results.find(a => +new Date(a.webPublicationDate) >= cut) ?? r.response.results[0];
-  const el = document.getElementById("news");
-  el.textContent = top.webTitle;
-  el.href = top.webUrl;
+  story = r.response.results.find(a => +new Date(a.webPublicationDate) >= cut) ?? r.response.results[0];
 };
 
+const paintNews = () => {
+  newsbar.innerHTML = `${ICO.news}<b>${story ? story.webTitle : "—"}</b><span class="src">Guardian · US</span>`;
+  if (story) newsbar.href = story.webUrl;
+};
+
+/* ───────── Render ───────── */
+
+const paint = () => {
+  const t = nowMsk();
+  grid.innerHTML = [
+    ...PLACES.map(([name], i) => wxTile(name, wxData?.[i]?.current)),
+    ...MUSEUMS.map(([n, h]) => tile(n, placeState(h, t), ICO.museum)),
+    ...BRIDGES.map(([n, s]) => tile(n, bridgeState(s, t), ICO.bridge)),
+    ...SHOPS.map(([n, h]) => tile(n, placeState(h, t), ICO.shop)),
+    ...BAKERIES.map(([n, h]) => tile(n, placeState(h, t), ICO.bakery)),
+    ...MARKET.map(([n, a, i]) => quoteTile(n, a, i))
+  ].join("");
+};
+
+const loadWeather = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045,59.96&longitude=30.243,30.31" +
+  "&current=temperature_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms")
+  .then(r => r.json()).then(d => { wxData = d; paint() }).catch(() => paint());
+
 paint();
+paintNews();
 loadWeather();
-brent().catch(() => {});
-topNews().catch(() => {});
+Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
+loadNews().then(paintNews).catch(() => {});
+
 setInterval(paint, 60000);
 setInterval(loadWeather, 300000);
-setInterval(() => { brent().catch(() => {}); topNews().catch(() => {}) }, 900000);
+setInterval(() => {
+  Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
+  loadNews().then(paintNews).catch(() => {});
+}, 900000);
 </script>
