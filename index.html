@@ -12,12 +12,10 @@
   .places { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4rem; max-width: 40rem }
   .head { display: flex; align-items: center; gap: .5rem; margin-bottom: 1em }
   .name { font-weight: 600 }
-  .temp, .time { font-family: "Space Mono", monospace; font-size: .8em }
-  .temp { display: flex; align-items: center; gap: .35rem }
-  .time { color: #8a8a8a; margin-top: .35em }
-  svg { width: 1.15em; height: 1.15em }
-  .blink { animation: blink 1s steps(1) infinite }
-  @keyframes blink { 0%, to { opacity: 1 } 50% { opacity: 0 } }
+  .temp { font-family: "Space Mono", monospace; font-size: .8em; display: flex; align-items: center; gap: .35rem }
+  .temp svg { width: 1.15em; height: 1.15em }
+  .arrow { width: 1.9em; height: 1.9em; margin-top: .5em; animation: pulse 2.4s ease-in-out infinite }
+  @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .35 } }
   @media (max-width: 480px) { .places { grid-template-columns: 1fr; gap: 2.5rem } }
 </style>
 
@@ -31,33 +29,36 @@
   const RAIN = CLOUD.replace("</svg>", '<path d="M8 21.5l-.8 2M12 21.5l-.8 2M16 21.5l-.8 2" stroke="currentColor" stroke-width="1.6"/></svg>');
 
   const icon = code => code >= 51 ? RAIN : code >= 2 ? CLOUD : SUN;
-  const clock = () => new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })
-    .format(new Date()).split(":");
 
-  const render = data => {
-    const [h, m] = clock();
-    app.innerHTML = PLACES.map(([name], i) => {
-      const c = data?.[i]?.current;
-      const temp = c ? `${c.temperature_2m > 0 ? "+" : ""}${c.temperature_2m.toFixed(1)}°C` : "—";
-      const wind = c ? `Wind ${Math.round(c.wind_speed_10m)} m/s` : "No data";
-      return `<div>
-        <div class="head"><span class="name">${name}</span>
-          <span class="temp">${c ? icon(c.weather_code) : ""}${temp}</span></div>
-        <div>${wind}</div>
-        <div class="time">${h}<span class="blink">:</span>${m} (GMT+3)</div>
-      </div>`;
-    }).join("");
+  // dir — откуда дует (0° = север). Стрелка показывает, куда: dir + 180.
+  // Южная составляющая — тёплый ветер, северная — холодный.
+  const arrow = dir => {
+    const warm = Math.cos((dir - 180) * Math.PI / 180);
+    const color = warm > 0.15 ? `hsl(${28 - 18 * warm} 88% 52%)`
+                : warm < -0.15 ? `hsl(${212 + 8 * warm} 85% 54%)`
+                : "#9a9a9a";
+    return `<svg class="arrow" viewBox="0 0 24 24" role="img" aria-label="Wind from ${Math.round(dir)}°"
+      style="transform:rotate(${dir + 180}deg);color:${color}">
+      <path d="M12 21V5M12 5l-5.4 5.4M12 5l5.4 5.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
   };
 
-  let last = null;
+  const render = data => app.innerHTML = PLACES.map(([name], i) => {
+    const c = data?.[i]?.current;
+    if (!c) return `<div><div class="head"><span class="name">${name}</span></div><div>No data</div></div>`;
+    return `<div>
+      <div class="head"><span class="name">${name}</span>
+        <span class="temp">${icon(c.weather_code)}${c.temperature_2m > 0 ? "+" : ""}${c.temperature_2m.toFixed(1)}°C</span></div>
+      <div>Wind ${Math.round(c.wind_speed_10m)} m/s</div>
+      ${arrow(c.wind_direction_10m)}
+    </div>`;
+  }).join("");
 
   const load = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045,59.96&longitude=30.243,30.31" +
-    "&current=temperature_2m,wind_speed_10m,weather_code&wind_speed_unit=ms&timezone=Europe%2FMoscow")
+    "&current=temperature_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms")
     .then(r => r.json())
-    .then(d => render(last = d))
-    .catch(() => render(last));
+    .then(render)
+    .catch(() => render(null));
 
   load();
-  setInterval(load, 300000);          // погода
-  setInterval(() => render(last), 30000);   // часы
+  setInterval(load, 300000);
 </script>
