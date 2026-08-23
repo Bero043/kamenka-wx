@@ -15,7 +15,7 @@
 
   .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-rows: 1fr;
           grid-template-columns: repeat(5, minmax(0, 1fr)) }
-  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(7, minmax(0, 1fr)) } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(6, minmax(0, 1fr)) } }
 
   .tile { border-radius: 3px; padding: clamp(.4rem, .8vw, .6rem); color: #fff; container-type: inline-size;
           display: flex; flex-direction: column; justify-content: space-between; gap: .2rem; overflow: hidden }
@@ -34,6 +34,11 @@
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
 
+  /* снимок дня: фото фоном, текст поверх затемнения */
+  .apod { grid-column: span 2; background: #111 center/cover no-repeat; position: relative; text-decoration: none; color: #fff }
+  .apod::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0, 0, 0, .78)) }
+  .apod > * { position: relative; z-index: 1 }
+
   /* новость — тонкая полоса под сеткой, одна строка */
   .newsbar { display: flex; align-items: center; gap: .5rem; padding: .5rem .6rem; border-radius: 3px;
              background: #f4f4f5; color: #111; text-decoration: none; font-size: clamp(.68rem, .85vw, .82rem) }
@@ -44,9 +49,12 @@
   @media (max-width: 620px) {
     .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
     .wide { grid-column: span 2 }
-    /* на телефоне ряд ~80px — крупнее текст не влезает */
+    /* на телефоне ряды ниже — текст и значения компактнее */
     .tile b { font-size: clamp(.85rem, 14cqw, 1.3rem) }
     .wide b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
+    .val { font-size: clamp(.68rem, 9cqw, .92rem); line-height: 1.15 }
+    .tile span { font-size: clamp(8.5px, 5.5cqw, 11px) }
+    .tile { padding: .28rem .34rem; gap: .1rem }
   }
 </style>
 
@@ -97,6 +105,7 @@ const ICO = {
   cloud:   svg('<path d="M6.5 19A4.5 4.5 0 0 1 6 10a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 19z" fill="currentColor" stroke="none"/>'),
   rain:    svg('<path d="M6.5 16A4.5 4.5 0 0 1 6 7a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 16z" fill="currentColor" stroke="none"/><path d="M8.5 19l-.8 2M12 19l-.8 2M15.5 19l-.8 2"/>'),
   iss:     svg('<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="9.6" ry="4.2" transform="rotate(-28 12 12)"/>'),
+  star:    svg('<path d="M12 3l2.5 5.6 6.1.6-4.6 4 1.3 6-5.3-3.1-5.3 3.1 1.3-6-4.6-4 6.1-.6z"/>'),
   news:    svg('<path d="M4 5h13v14H4zM17 9h3v8a2 2 0 0 1-3 0zM7 8.5h7M7 12h7M7 15.5h4"/>')
 };
 
@@ -207,6 +216,23 @@ const issTile = () => {
     <span>${overhead ? `overhead · ${alt} km` : `${alt} km up`}</span></div></div>`;
 };
 
+/* ───────── NASA astronomy picture of the day ───────── */
+
+let apod = null;
+
+// DEMO_KEY: 10 запросов в час на адрес, поэтому только при открытии и раз в 6 часов
+const loadApod = () => fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&thumbs=true")
+  .then(r => r.json()).then(d => { apod = d });
+
+const apodTile = () => {
+  if (!apod) return `<div class="tile idle apod"><div class="top"><b>APOD</b>${ICO.star}</div><span>no data</span></div>`;
+  const pic = apod.media_type === "image" ? apod.url : apod.thumbnail_url;   // по средам бывает видео
+  return `<a class="tile apod" href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener"
+      style="${pic ? `background-image:url('${pic}')` : ""}">
+    <div class="top"><b>${apod.title}</b>${ICO.star}</div>
+    <span>NASA · ${apod.date}</span></a>`;
+};
+
 /* ───────── Top US news ───────── */
 
 let story = null;
@@ -235,7 +261,8 @@ const paint = () => {
     ...SHOPS.map(([n, h]) => tile(n, placeState(h, t), ICO.shop)),
     ...BAKERIES.map(([n, h]) => tile(n, placeState(h, t), ICO.bakery)),
     ...MARKET.map(([n, a, i]) => quoteTile(n, a, i)),
-    issTile()
+    issTile(),
+    apodTile()
   ].join("");
 };
 
@@ -247,6 +274,7 @@ paint();
 paintNews();
 loadWeather();
 loadIss().then(paint).catch(() => {});
+loadApod().then(paint).catch(() => {});
 Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
 loadNews().then(paintNews).catch(() => {});
 
@@ -256,4 +284,5 @@ setInterval(() => {
   Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
   loadNews().then(paintNews).catch(() => {});
 }, 900000);
+setInterval(() => loadApod().then(paint).catch(() => {}), 6 * 36e5);
 </script>
