@@ -23,14 +23,14 @@
   .bot > div { min-width: 0 }
   .tile b { min-width: 0; font-weight: 600; font-size: clamp(1rem, 18cqw, 2.3rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
   .tile span { font-family: "Space Mono", monospace; font-size: clamp(9px, 6cqw, 12.5px); opacity: .9 }
-  .ico { flex: none; width: clamp(14px, 9cqw, 22px); height: auto; opacity: .7 }
+  .ico { flex: none; width: clamp(19px, 14cqw, 38px); height: auto; opacity: .85 }
 
   .open { background: var(--open) } .soon { background: var(--soon); color: #111 }
   .shut { background: var(--shut) } .idle { background: var(--idle) } .flat { background: var(--flat) }
 
   .wide { grid-column: span 2 }
-  .wide b { font-size: clamp(1rem, 9cqw, 2.3rem) }
-  .wide .ico { width: clamp(14px, 4.5cqw, 22px) }
+  .wide b, .apod b { font-size: clamp(1rem, 9cqw, 2.3rem) }
+  .wide .ico, .apod .ico { width: clamp(19px, 7cqw, 38px) }
   .val { font-family: "Space Mono", monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
@@ -52,7 +52,7 @@
     .wide { grid-column: span 2 }
     /* на телефоне ряды ниже — текст и значения компактнее */
     .tile b { font-size: clamp(.85rem, 14cqw, 1.3rem) }
-    .wide b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
+    .wide b, .apod b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
     .val { font-size: clamp(.68rem, 9cqw, .92rem); line-height: 1.15 }
     .tile span { font-size: clamp(8.5px, 5.5cqw, 11px) }
     .tile { padding: .28rem .34rem; gap: .1rem }
@@ -96,21 +96,21 @@ const BRIDGES = [
 
 /* ───────── Icons ───────── */
 
-const svg = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const svg = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICO = {
-  museum:  svg('<path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20h18"/>'),
-  bridge:  svg('<path d="M2 9c5 5.5 15 5.5 20 0M2 9v11M22 9v11M7.5 13v7M12 15v5M16.5 13v7"/>'),
-  shop:    svg('<path d="M3.5 9h17l-2-5H5.5l-2 5zM5 9v11h14V9M10 20v-6h4v6"/>'),
-  bakery:  svg('<path d="M4 14c0-3.6 3.6-6 8-6s8 2.4 8 6-3.6 5-8 5-8-1.4-8-5"/><path d="M9 10.5l.8 7M12.5 9.8v8M16 10.5l-.8 7"/>'),
-  oil:     svg('<path d="M12 3c3.4 4.4 5.8 7.6 5.8 10.4a5.8 5.8 0 0 1-11.6 0C6.2 10.6 8.6 7.4 12 3z" fill="currentColor" stroke="none"/>'),
-  gold:    svg('<path d="M7 9h10l4 7H3l4-7z"/><path d="M3 16h18v3H3z"/>'),
-  sun:     svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8"/>'),
-  cloud:   svg('<path d="M6.5 19A4.5 4.5 0 0 1 6 10a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 19z" fill="currentColor" stroke="none"/>'),
-  rain:    svg('<path d="M6.5 16A4.5 4.5 0 0 1 6 7a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 16z" fill="currentColor" stroke="none"/><path d="M8.5 19l-.8 2M12 19l-.8 2M15.5 19l-.8 2"/>'),
-  iss:     svg('<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="9.6" ry="4.2" transform="rotate(-28 12 12)"/>'),
-  parcel:  svg('<path d="M3 8.2l9-4.2 9 4.2v8.6l-9 4.2-9-4.2z"/><path d="M3 8.2l9 4.2 9-4.2M12 12.4V21"/>'),
-  star:    svg('<path d="M12 3l2.5 5.6 6.1.6-4.6 4 1.3 6-5.3-3.1-5.3 3.1 1.3-6-4.6-4 6.1-.6z"/>'),
-  news:    svg('<path d="M4 5h13v14H4zM17 9h3v8a2 2 0 0 1-3 0zM7 8.5h7M7 12h7M7 15.5h4"/>')
+  museum:  svg('<path d="M3 21l18 0"/> <path d="M3 10l18 0"/> <path d="M5 6l7 -3l7 3"/> <path d="M4 10l0 11"/> <path d="M20 10l0 11"/> <path d="M8 14l0 3"/> <path d="M12 14l0 3"/> <path d="M16 14l0 3"/>'),
+  bridge:  svg('<path d="M6 5l0 14"/> <path d="M18 5l0 14"/> <path d="M2 15l20 0"/> <path d="M3 8a7.5 7.5 0 0 0 3 -2a6.5 6.5 0 0 0 12 0a7.5 7.5 0 0 0 3 2"/> <path d="M12 10l0 5"/>'),
+  shop:    svg('<path d="M3 21l18 0"/> <path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4"/> <path d="M5 21l0 -10.15"/> <path d="M19 21l0 -10.15"/> <path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4"/>'),
+  bakery:  svg('<path d="M10.2 18H4.774a1.5 1.5 0 0 1-1.352-.97 11 11 0 0 1 .132-6.487"/> <path d="M18 10.2V4.774a1.5 1.5 0 0 0-.97-1.352 11 11 0 0 0-6.486.132"/> <path d="M18 5a4 3 0 0 1 4 3 2 2 0 0 1-2 2 10 10 0 0 0-5.139 1.42"/> <path d="M5 18a3 4 0 0 0 3 4 2 2 0 0 0 2-2 10 10 0 0 1 1.42-5.14"/> <path d="M8.709 2.554a10 10 0 0 0-6.155 6.155 1.5 1.5 0 0 0 .676 1.626l9.807 5.42a2 2 0 0 0 2.718-2.718l-5.42-9.807a1.5 1.5 0 0 0-1.626-.676"/>'),
+  parcel:  svg('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/> <path d="M12 22V12"/> <polyline points="3.29 7 12 12 20.71 7"/> <path d="m7.5 4.27 9 5.15"/>'),
+  oil:     svg('<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>'),
+  gold:    svg('<path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/> <path d="M15 6h1v4"/> <path d="m6.134 14.768.866-.5 2 3.464"/> <circle cx="16" cy="8" r="6"/>'),
+  iss:     svg('<path d="M20.341 6.484A10 10 0 0 1 10.266 21.85"/> <path d="M3.659 17.516A10 10 0 0 1 13.74 2.152"/> <circle cx="12" cy="12" r="3"/> <circle cx="19" cy="5" r="2"/> <circle cx="5" cy="19" r="2"/>'),
+  star:    svg('<path d="m10.065 12.493-6.18 1.318a.934.934 0 0 1-1.108-.702l-.537-2.15a1.07 1.07 0 0 1 .691-1.265l13.504-4.44"/> <path d="m13.56 11.747 4.332-.924"/> <path d="m16 21-3.105-6.21"/> <path d="M16.485 5.94a2 2 0 0 1 1.455-2.425l1.09-.272a1 1 0 0 1 1.212.727l1.515 6.06a1 1 0 0 1-.727 1.213l-1.09.272a2 2 0 0 1-2.425-1.455z"/> <path d="m6.158 8.633 1.114 4.456"/> <path d="m8 21 3.105-6.21"/> <circle cx="12" cy="13" r="2"/>'),
+  news:    svg('<path d="M15 18h-5"/> <path d="M18 14h-8"/> <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2"/> <rect width="8" height="4" x="10" y="6" rx="1"/>'),
+  sun:     svg('<circle cx="12" cy="12" r="4"/> <path d="M12 2v2"/> <path d="M12 20v2"/> <path d="m4.93 4.93 1.41 1.41"/> <path d="m17.66 17.66 1.41 1.41"/> <path d="M2 12h2"/> <path d="M20 12h2"/> <path d="m6.34 17.66-1.41 1.41"/> <path d="m19.07 4.93-1.41 1.41"/>'),
+  cloud:   svg('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>'),
+  rain:    svg('<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/> <path d="M16 14v6"/> <path d="M8 14v6"/> <path d="M12 16v6"/>')
 };
 
 /* ───────── Logic ───────── */
