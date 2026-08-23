@@ -43,31 +43,28 @@
   .apod > * { position: relative; z-index: 1 }
   .apod a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.5) }
 
-  /* новость — тонкая полоса под сеткой, одна строка */
-  .newsbar { display: flex; align-items: center; gap: .5rem; padding: .5rem .6rem; border-radius: 3px;
-             background: #f4f4f5; color: #111; text-decoration: none; font-size: clamp(.68rem, .85vw, .82rem) }
+  /* три последних городских новости — полосой под сеткой */
+  .newsbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .5rem .6rem; border-radius: 3px; background: #f4f4f5;
+             font-size: clamp(.68rem, .85vw, .82rem) }
+  .newsbar a { display: flex; align-items: baseline; gap: .5rem; color: #111; text-decoration: none }
+  .newsbar a:hover b { text-decoration: underline }
+  .newsbar time { font-family: "Space Mono", monospace; font-size: clamp(8.5px, .7vw, 10.5px); color: #6b7280; flex: none }
   .newsbar b { min-width: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-  .newsbar .src { font-family: "Space Mono", monospace; font-size: clamp(8.5px, .7vw, 10px); color: #6b7280; flex: none }
-  .newsbar .ico { opacity: .55 }
 
   @media (max-width: 620px) {
-    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
-    .w2 { grid-column: span 2 }
-  .h2 { grid-row: span 2 }
-    /* на телефоне ряды ниже — текст и значения компактнее */
+    .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .28rem }
+    /* на телефоне текст компактнее */
     .tile b { font-size: clamp(.85rem, 14cqw, 1.3rem) }
     .w2 b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
     .val { font-size: clamp(.68rem, 9cqw, .92rem); line-height: 1.15 }
     .tile span { font-size: clamp(8.5px, 5.5cqw, 11px) }
     .tile { padding: .28rem .34rem; gap: .1rem }
-    .grid { grid-auto-rows: minmax(58px, 1fr) }
-    .bot > div { display: flex; align-items: baseline; gap: .3rem }
-    .tile[data-key="iss"] .bot span { display: none }
+    .grid { grid-auto-rows: minmax(54px, 1fr) }
   }
 </style>
 
 <div class="grid" id="grid"></div>
-<a class="newsbar" id="newsbar" target="_blank" rel="noopener"></a>
+<div class="newsbar" id="newsbar"></div>
 
 <script>
 /* ───────── SCHEDULES. Edit here — seven entries from MONDAY, null = closed ───────── */
@@ -265,21 +262,30 @@ const apodTile = () => {
     <div class="bot"><span><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">NASA · ${apod.date}</a></span>${ICO.star}</div></div>`;
 };
 
-/* ───────── Top US news ───────── */
+/* ───────── Три последние городские новости: RSS «Фонтанки» ───────── */
 
-let story = null;
+let stories = [];
+// рубрика «Город» локальна по определению; из остальных берём только с петербургским маркером
+const LOCAL = /петербург|питер|спб|ленинград|ленобласт|нев(а|ы|е|ой)|кронштадт|петергоф|пушкинск|колпин|приморск|выборгск|курортн|кировск|московск(ий|ом) район/i;
 
 const loadNews = async () => {
-  const from = new Date(Date.now() - 36e5 * 30).toISOString().slice(0, 10);
-  const r = await (await fetch("https://content.guardianapis.com/search?section=us-news&order-by=newest" +
-    `&from-date=${from}&page-size=20&api-key=test`)).json();
-  const cut = Date.now() - 864e5;
-  story = r.response.results.find(a => +new Date(a.webPublicationDate) >= cut) ?? r.response.results[0];
+  // хост обязательно с www: fontanka.ru отдаёт 301 без CORS-заголовка, и браузер обрывает запрос
+  const xml = await (await fetch("https://www.fontanka.ru/rss-feeds/rss.xml", { cache: "no-store" })).text();
+  const doc = new DOMParser().parseFromString(xml, "text/xml");
+  const text = (item, tag) => item.querySelector(tag)?.textContent?.trim() ?? "";
+  stories = [...doc.querySelectorAll("item")]
+    .map(i => ({ title: text(i, "title"), link: text(i, "link"), cat: text(i, "category"), date: new Date(text(i, "pubDate")) }))
+    .filter(a => a.cat === "Город" || LOCAL.test(a.title))
+    .sort((a, b) => b.date - a.date)
+    .slice(0, 3);
 };
 
 const paintNews = () => {
-  newsbar.innerHTML = `${ICO.news}<b>${story ? story.webTitle : "—"}</b><span class="src">Guardian · US</span>`;
-  if (story) newsbar.href = story.webUrl;
+  newsbar.innerHTML = stories.length
+    ? stories.map(a => `<a href="${a.link}" target="_blank" rel="noopener">
+        <time>${a.date.toLocaleTimeString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })}</time>
+        <b>${a.title}</b></a>`).join("")
+    : `<a><time>—</time><b>новости недоступны</b></a>`;
 };
 
 /* ───────── Render ───────── */
