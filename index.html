@@ -220,9 +220,18 @@ const issTile = () => {
 
 let apod = null;
 
-// DEMO_KEY: 10 запросов в час на адрес, поэтому только при открытии и раз в 6 часов
-const loadApod = () => fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&thumbs=true")
-  .then(r => r.json()).then(d => { apod = d });
+// DEMO_KEY: всего 10 запросов в час на адрес, поэтому снимок кэшируется на сутки
+const loadApod = async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const saved = JSON.parse(localStorage.getItem("apod") || "null");
+    if (saved?.fetched === today) { apod = saved.data; return }
+  } catch {}
+  const d = await (await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&thumbs=true")).json();
+  if (!d?.title) throw new Error("apod unavailable");
+  apod = d;
+  try { localStorage.setItem("apod", JSON.stringify({ fetched: today, data: d })) } catch {}
+};
 
 const apodTile = () => {
   if (!apod) return `<div class="tile idle apod"><div class="top"><b>APOD</b>${ICO.star}</div><span>no data</span></div>`;
