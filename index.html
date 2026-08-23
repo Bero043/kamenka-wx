@@ -14,7 +14,8 @@
          display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
 
   .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-rows: 1fr;
-          grid-template-columns: repeat(auto-fit, minmax(clamp(84px, 10vw, 148px), 1fr)) }
+          grid-template-columns: repeat(5, minmax(0, 1fr)) }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(7, minmax(0, 1fr)) } }
 
   .tile { border-radius: 3px; padding: clamp(.4rem, .8vw, .6rem); color: #fff; container-type: inline-size;
           display: flex; flex-direction: column; justify-content: space-between; gap: .2rem; overflow: hidden }
@@ -95,6 +96,7 @@ const ICO = {
   sun:     svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8"/>'),
   cloud:   svg('<path d="M6.5 19A4.5 4.5 0 0 1 6 10a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 19z" fill="currentColor" stroke="none"/>'),
   rain:    svg('<path d="M6.5 16A4.5 4.5 0 0 1 6 7a6 6 0 0 1 11.4 1.5A4.2 4.2 0 0 1 17 16z" fill="currentColor" stroke="none"/><path d="M8.5 19l-.8 2M12 19l-.8 2M15.5 19l-.8 2"/>'),
+  iss:     svg('<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="9.6" ry="4.2" transform="rotate(-28 12 12)"/>'),
   news:    svg('<path d="M4 5h13v14H4zM17 9h3v8a2 2 0 0 1-3 0zM7 8.5h7M7 12h7M7 15.5h4"/>')
 };
 
@@ -177,6 +179,34 @@ const quoteTile = (name, asset, icon) => {
     <div><div class="val">$${q.price.toFixed(2)}</div><span>${sign}${(q.change ?? 0).toFixed(2)}%</span></div></div>`;
 };
 
+/* ───────── ISS in real time ───────── */
+
+let iss = null;
+const HOME = [60.045, 30.243];   // Каменка
+
+const kmBetween = (a1, o1, a2, o2) => {
+  const r = Math.PI / 180, R = 6371;
+  const h = Math.sin((a2 - a1) * r / 2) ** 2 +
+            Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin((o2 - o1) * r / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
+  .then(r => r.json()).then(d => { iss = d });
+
+const issTile = () => {
+  if (!iss) return `<div class="tile idle"><div class="top"><b>ISS</b>${ICO.iss}</div><span>no data</span></div>`;
+  const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
+  const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
+  const away = kmBetween(...HOME, iss.latitude, iss.longitude);
+  const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
+  const alt = Math.round(iss.altitude);
+  return `<div class="tile ${overhead ? "open" : "flat"}">
+    <div class="top"><b>ISS</b>${ICO.iss}</div>
+    <div><div class="val">${ns} ${ew}</div>
+    <span>${overhead ? `overhead · ${alt} km` : `${alt} km up`}</span></div></div>`;
+};
+
 /* ───────── Top US news ───────── */
 
 let story = null;
@@ -204,7 +234,8 @@ const paint = () => {
     ...BRIDGES.map(([n, s]) => tile(n, bridgeState(s, t), ICO.bridge)),
     ...SHOPS.map(([n, h]) => tile(n, placeState(h, t), ICO.shop)),
     ...BAKERIES.map(([n, h]) => tile(n, placeState(h, t), ICO.bakery)),
-    ...MARKET.map(([n, a, i]) => quoteTile(n, a, i))
+    ...MARKET.map(([n, a, i]) => quoteTile(n, a, i)),
+    issTile()
   ].join("");
 };
 
@@ -215,10 +246,11 @@ const loadWeather = () => fetch("https://api.open-meteo.com/v1/forecast?latitude
 paint();
 paintNews();
 loadWeather();
+loadIss().then(paint).catch(() => {});
 Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
 loadNews().then(paintNews).catch(() => {});
 
-setInterval(paint, 60000);
+setInterval(() => loadIss().then(paint).catch(paint), 60000);   // МКС проходит ~460 км в минуту
 setInterval(loadWeather, 300000);
 setInterval(() => {
   Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
