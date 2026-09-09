@@ -19,8 +19,10 @@
   .tile { aspect-ratio: 1; border-radius: 50%; cursor: pointer; user-select: none; transition: filter .15s;
           padding: 13%; color: #fff; container-type: inline-size; overflow: hidden;
           display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25em; text-align: center }
-  /* точка в центре круга */
-  .dot { flex: none; width: 6cqw; max-width: 10px; aspect-ratio: 1; border-radius: 50%; background: currentColor; opacity: .6 }
+  /* круги внутри раскрытой группы — мельче обычных */
+  .tile[data-member] { width: 74%; place-self: center }
+  /* две буквы — набираем крупно; cqw считается от content-box круга, отсюда большой процент */
+  .tile[data-member] b { font-size: clamp(1rem, 40cqw, 2.4rem); letter-spacing: 0 }
   /* растянутая карточка — не круг, а пилюля; квадратная снова круг */
   .w2:not(.h2) { aspect-ratio: auto; border-radius: 999px }
   .w2.h2 { aspect-ratio: 1; border-radius: 50% }
@@ -49,10 +51,9 @@
   .apod a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.5) }
 
   /* в мелком круге значения и подписи компактнее — иначе трёхстрочные карточки не влезают */
-  @container (max-width: 122px) {
+  @container (max-width: 82px) {
     .val { font-size: clamp(.58rem, 8cqw, .82rem); line-height: 1.08 }
     .tile span { font-size: clamp(7.5px, 4.5cqw, 10px) }
-    .dot { max-width: 7px }
   }
 
   /* три последних городских новости — полосой под сеткой */
@@ -178,12 +179,13 @@ const bridgeState = (spans, t) => {
 };
 
 const tile = (name, [cls, note], icon, key = name, member = "") =>
-  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}" ${member ? `data-member="${member}"` : ""}>
-    <b>${name}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
+  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"
+     ${member ? `data-member="${member}" title="${name}"` : ""}>
+    <b>${member ? name.slice(0, 2) : name}</b><div class="bot"><span>${note}</span>${icon}</div></div>`;
 
 const groupTile = (label, [cls, note], icon, group) =>
   `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}">
-    <b>${label}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
+    <b>${label}</b><div class="bot"><span>${note}</span>${icon}</div></div>`;
 
 // сводка по группе: худший статус задаёт цвет
 const worst = states => states.some(([c]) => c === "shut") ? "shut"
@@ -199,12 +201,12 @@ const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rota
 
 const wxTile = (name, c) => {
   const key = `wx:${name}`;
-  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.cloud}</div></div>`;
+  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>no data</span>${ICO.cloud}</div></div>`;
   // red when cold (below +5), windy (7 m/s and up) or raining
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
   const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
-  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i>
+  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b>
     <div class="bot"><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} m/s</div>${ico}</div></div>`;
 };
 
@@ -227,10 +229,10 @@ const loadQuote = async asset => {
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
-  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><i class="dot"></i><div class="bot"><span>no data</span>${icon}</div></div>`;
+  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>no data</span>${icon}</div></div>`;
   const cls = !q.change ? "flat" : q.change > 0 ? "open" : "shut";
   const sign = q.change > 0 ? "+" : "";
-  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b><i class="dot"></i>
+  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b>
     <div class="bot"><div><div class="val">$${q.price.toFixed(2)}</div><span>${sign}${(q.change ?? 0).toFixed(2)}%</span></div>${icon}</div></div>`;
 };
 
@@ -250,13 +252,13 @@ const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
   .then(r => r.json()).then(d => { iss = d });
 
 const issTile = () => {
-  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>ISS</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.iss}</div></div>`;
+  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>ISS</b><div class="bot"><span>no data</span>${ICO.iss}</div></div>`;
   const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
   const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
   const away = kmBetween(...HOME, iss.latitude, iss.longitude);
   const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
   const alt = Math.round(iss.altitude);
-  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>ISS</b><i class="dot"></i>
+  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>ISS</b>
     <div class="bot"><div><div class="val">${ns} ${ew}</div>
     <span>${overhead ? `overhead · ${alt} km` : `${alt} km up`}</span></div>${ICO.iss}</div></div>`;
 };
@@ -279,11 +281,11 @@ const loadApod = async () => {
 };
 
 const apodTile = () => {
-  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.star}</div></div>`;
+  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><div class="bot"><span>no data</span>${ICO.star}</div></div>`;
   const pic = apod.media_type === "image" ? apod.url : apod.thumbnail_url;   // по средам бывает видео
   return `<div class="tile apod ${spanOf("apod")}" data-key="apod"
       style="${pic ? `background-image:url('${pic}')` : ""}">
-    <b>${apod.title}</b><i class="dot"></i>
+    <b>${apod.title}</b>
     <div class="bot"><span><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">NASA · ${apod.date}</a></span>${ICO.star}</div></div>`;
 };
 
@@ -331,7 +333,7 @@ const fitGrid = () => {
   let cols = 3;
   for (let c = 3; c <= 12; c++) {
     const d = (W - gap * (c - 1)) / c;
-    if (d < 68) break;                                  // мельче горошины не нужно
+    if (d < 92) break;             // мельче текст уже не читается — лучше прокрутка
     cols = c;
     const rows = Math.ceil(cells / c);
     if (rows * d + gap * (rows - 1) <= H) break;
