@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Saint Petersburg — indicators</title>
-<meta name="description" content="Weather, bridge openings, museum and shop hours, Brent and gold">
+<title>Санкт-Петербург — индикаторы</title>
+<meta name="description" content="Погода, разводка мостов, часы работы музеев и магазинов, Brent и золото">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟩</text></svg>">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Space+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  :root { color-scheme: light; font-family: "Space Grotesk", sans-serif;
+  :root { color-scheme: light; font-family: Manrope, "Helvetica Neue", sans-serif;
           --open: #16a34a; --soon: #eab308; --shut: #dc2626; --idle: #9ca3af; --flat: #6b7280 }
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { min-height: 100svh; background: #fff; color: #111; padding: clamp(.4rem, 1.2vw, 1rem);
@@ -30,7 +30,7 @@
   .bot > div { min-width: 0 }
   .tile:active { filter: brightness(1.07) }
   .tile b { width: 100%; min-width: 0; font-weight: 600; font-size: clamp(.78rem, 13cqw, 1.7rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
-  .tile span { font-family: "Space Mono", monospace; font-size: clamp(8px, 5cqw, 11px); opacity: .9 }
+  .tile span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(8px, 5cqw, 11px); opacity: .9 }
   .ico { flex: none; width: clamp(14px, 10cqw, 26px); height: auto; opacity: .85 }
 
   .open { background: var(--open) } .soon { background: var(--soon); color: #111 }
@@ -40,7 +40,7 @@
   .h2 { grid-row: span 2 }
   .w2 b { width: 100%; font-size: clamp(.8rem, 7cqw, 1.7rem) }
   .w2 .ico { width: clamp(19px, 7cqw, 38px) }
-  .val { font-family: "Space Mono", monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
+  .val { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
 
@@ -61,7 +61,7 @@
              font-size: clamp(.68rem, .85vw, .82rem) }
   .newsbar a { display: flex; align-items: baseline; gap: .5rem; color: #111; text-decoration: none }
   .newsbar a:hover b { text-decoration: underline }
-  .newsbar time { font-family: "Space Mono", monospace; font-size: clamp(8.5px, .7vw, 10.5px); color: #6b7280; flex: none }
+  .newsbar time { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(8.5px, .7vw, 10.5px); color: #6b7280; flex: none }
   .newsbar b { min-width: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 
   @media (max-width: 620px) {
@@ -84,30 +84,30 @@
 const week = (h, closed = []) => [0, 1, 2, 3, 4, 5, 6].map(i => closed.includes(i) ? null : h);
 
 const MUSEUMS = [
-  ["Hermitage",      [null, "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-19:00", "11:00-18:00"]],
-  ["Russian Museum", ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
-  ["Benois Wing",    ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
-  ["Erarta",         week("11:00-23:00", [1])]
+  ["Эрмитаж",         [null, "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-18:00", "11:00-19:00", "11:00-18:00"]],
+  ["Русский музей",   ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
+  ["Корпус Бенуа",    ["10:00-19:00", null, "10:00-19:00", "10:00-19:00", "10:00-20:00", "10:00-20:00", "10:00-19:00"]],
+  ["Эрарта",          week("11:00-23:00", [1])]
 ];
-const SHOPS    = [["Pyaterochka", week("08:00-23:00")], ["Perekrestok", week("08:00-23:00")]];
+const SHOPS    = [["Пятёрочка", week("08:00-23:00")], ["Перекрёсток", week("08:00-23:00")]];
 // пункт выдачи Ozon, Aviakonstruktorov 54 — часы типовые, уточни по своему пункту
 const PICKUP   = [["Ozon", week("10:00-21:00")]];
-const BAKERIES = [["Tsekh", week("08:00-22:00")], ["Vse Doma", week("08:00-22:00")], ["Khlebnik", week("08:00-21:00")]];
+const BAKERIES = [["Цех", week("08:00-22:00")], ["Все Дома", week("08:00-22:00")], ["Хлебник", week("08:00-21:00")]];
 
 const NAVIGATION = ["04-10", "11-30"];
 const BRIDGES = [
-  ["Blagoveshchensky", ["01:25-02:45", "03:10-05:00"]],
-  ["Palace",           ["01:10-02:50", "03:10-04:55"]],
-  ["Trinity",          ["01:20-04:50"]],
-  ["Liteyny",          ["01:40-04:45"]],
-  ["Bolsheokhtinsky",  ["02:00-05:00"]],
-  ["Al. Nevsky",       ["02:20-05:10"]],
-  ["Volodarsky",       ["02:00-03:45", "04:15-05:30"]],
-  ["Birzhevoy",        ["02:00-02:55", "03:35-04:55"]],
-  ["Tuchkov",          ["02:00-02:55", "03:35-04:55"]],
-  ["Sampsonievsky",    ["01:30-04:30"]],   // on request, 2 days ahead
-  ["Grenadersky",      ["01:30-04:30"]],
-  ["Kantemirovsky",    ["01:30-04:30"]]
+  ["Благовещенский",  ["01:25-02:45", "03:10-05:00"]],
+  ["Дворцовый",       ["01:10-02:50", "03:10-04:55"]],
+  ["Троицкий",        ["01:20-04:50"]],
+  ["Литейный",        ["01:40-04:45"]],
+  ["Большеохтинский", ["02:00-05:00"]],
+  ["Александра Невского", ["02:20-05:10"]],
+  ["Володарский",     ["02:00-03:45", "04:15-05:30"]],
+  ["Биржевой",        ["02:00-02:55", "03:35-04:55"]],
+  ["Тучков",          ["02:00-02:55", "03:35-04:55"]],
+  ["Сампсониевский",  ["01:30-04:30"]],   // on request, 2 days ahead
+  ["Гренадерский",    ["01:30-04:30"]],
+  ["Кантемировский",  ["01:30-04:30"]]
 ];
 
 /* ───────── Icons ───────── */
@@ -159,29 +159,44 @@ const nowMsk = () => {
 
 const placeState = (hours, t) => {
   const today = hours[t.dow];
-  if (!today) return ["shut", "closed"];
+  if (!today) return ["shut", "закрыто"];
   const [o, c] = today.split("-").map(mins);
-  if (t.min < o) return ["shut", `from ${today.slice(0, 5)}`];
-  if (t.min >= c) return ["shut", "closed"];
-  if (c - t.min <= 60) return ["soon", `till ${today.slice(6)}`];
-  return ["open", `till ${today.slice(6)}`];
+  if (t.min < o) return ["shut", `с ${today.slice(0, 5)}`];
+  if (t.min >= c) return ["shut", "закрыто"];
+  if (c - t.min <= 60) return ["soon", `до ${today.slice(6)}`];
+  return ["open", `до ${today.slice(6)}`];
 };
 
 const bridgeState = (spans, t) => {
   const [from, to] = NAVIGATION;
-  if (t.md < from || t.md > to) return ["open", "off-season"];
+  if (t.md < from || t.md > to) return ["open", "вне навигации"];
   for (const s of spans) {
     const [a, b] = s.split("-").map(mins);
-    if (t.min >= a && t.min < b) return ["shut", `till ${s.slice(6)}`];
-    if (a - t.min > 0 && a - t.min <= 60) return ["soon", `at ${s.slice(0, 5)}`];
+    if (t.min >= a && t.min < b) return ["shut", `до ${s.slice(6)}`];
+    if (a - t.min > 0 && a - t.min <= 60) return ["soon", `в ${s.slice(0, 5)}`];
   }
-  return ["open", `at ${spans[0].slice(0, 5)}`];
+  return ["open", `в ${spans[0].slice(0, 5)}`];
+};
+
+// имена групп нужны, чтобы сокращения не совпадали: «Эрмитаж» и «Эрарта» оба дают «Эр»
+const GROUP_NAMES = {
+  museums: () => MUSEUMS.map(([n]) => n),
+  bridges: () => BRIDGES.map(([n]) => n)
+};
+
+const shortLabel = (name, peers) => {
+  for (let len = 2; len <= name.length; len++) {
+    const cut = name.slice(0, len).toLowerCase();
+    if (!peers.some(o => o !== name && o.slice(0, len).toLowerCase() === cut)) return name.slice(0, len);
+  }
+  return name.slice(0, 2);
 };
 
 const tile = (name, [cls, note], icon, key = name, member = "") =>
   `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"
      ${member ? `data-member="${member}" title="${name}"` : ""}>
-    <b>${member ? name.slice(0, 2) : name}</b><div class="bot"><span>${note}</span>${icon}</div></div>`;
+    <b>${member ? shortLabel(name, GROUP_NAMES[member]()) : name}</b>
+    <div class="bot"><span>${note}</span>${icon}</div></div>`;
 
 const groupTile = (label, [cls, note], icon, group) =>
   `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}">
@@ -193,7 +208,7 @@ const worst = states => states.some(([c]) => c === "shut") ? "shut"
 
 /* ───────── Weather ───────── */
 
-const PLACES = [["Kamenka", 60.045, 30.243], ["Petrogradka", 59.96, 30.31]];
+const PLACES = [["Каменка", 60.045, 30.243], ["Петроградка", 59.96, 30.31]];
 let wxData = null;
 
 const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${dir + 180}deg)" aria-hidden="true">
@@ -201,18 +216,18 @@ const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rota
 
 const wxTile = (name, c) => {
   const key = `wx:${name}`;
-  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>no data</span>${ICO.cloud}</div></div>`;
-  // red when cold (below +5), windy (7 m/s and up) or raining
+  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>нет данных</span>${ICO.cloud}</div></div>`;
+  // красный, если холодно (ниже +5), ветрено (7 м/с и больше) или дождь
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
   const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
   return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b>
-    <div class="bot"><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} m/s</div>${ico}</div></div>`;
+    <div class="bot"><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} м/с</div>${ico}</div></div>`;
 };
 
 /* ───────── Commodities: Brent and gold from MOEX ───────── */
 
-const MARKET = [["Brent", "BR", ICO.oil], ["Gold", "GOLD", ICO.gold]];
+const MARKET = [["Brent", "BR", ICO.oil], ["Золото", "GOLD", ICO.gold]];
 const quotes = {};   // asset -> {price, change}
 
 const loadQuote = async asset => {
@@ -229,7 +244,7 @@ const loadQuote = async asset => {
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
-  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>no data</span>${icon}</div></div>`;
+  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>нет данных</span>${icon}</div></div>`;
   const cls = !q.change ? "flat" : q.change > 0 ? "open" : "shut";
   const sign = q.change > 0 ? "+" : "";
   return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b>
@@ -252,15 +267,15 @@ const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
   .then(r => r.json()).then(d => { iss = d });
 
 const issTile = () => {
-  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>ISS</b><div class="bot"><span>no data</span>${ICO.iss}</div></div>`;
+  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>МКС</b><div class="bot"><span>нет данных</span>${ICO.iss}</div></div>`;
   const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
   const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
   const away = kmBetween(...HOME, iss.latitude, iss.longitude);
   const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
   const alt = Math.round(iss.altitude);
-  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>ISS</b>
+  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>МКС</b>
     <div class="bot"><div><div class="val">${ns} ${ew}</div>
-    <span>${overhead ? `overhead · ${alt} km` : `${alt} km up`}</span></div>${ICO.iss}</div></div>`;
+    <span>${overhead ? `над нами · ${alt} км` : `${alt} км`}</span></div>${ICO.iss}</div></div>`;
 };
 
 /* ───────── NASA astronomy picture of the day ───────── */
@@ -281,7 +296,7 @@ const loadApod = async () => {
 };
 
 const apodTile = () => {
-  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><div class="bot"><span>no data</span>${ICO.star}</div></div>`;
+  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><div class="bot"><span>нет данных</span>${ICO.star}</div></div>`;
   const pic = apod.media_type === "image" ? apod.url : apod.thumbnail_url;   // по средам бывает видео
   return `<div class="tile apod ${spanOf("apod")}" data-key="apod"
       style="${pic ? `background-image:url('${pic}')` : ""}">
@@ -350,8 +365,8 @@ const paint = () => {
       const open = st.filter(([c]) => c !== "shut").length;
       return OPEN_GROUP.museums
         ? MUSEUMS.map(([n, h]) => tile(n, placeState(h, t), ICO.museum, n, "museums"))
-        : [groupTile("Museums", [open ? worst(st.filter(([c]) => c !== "shut")) : "shut",
-            `${open} of ${MUSEUMS.length} open`], ICO.museum, "museums")];
+        : [groupTile("Музеи", [open ? worst(st.filter(([c]) => c !== "shut")) : "shut",
+            `${open} из ${MUSEUMS.length} открыто`], ICO.museum, "museums")];
     })(),
     ...(() => {
       const st = BRIDGES.map(([, sp]) => bridgeState(sp, t));
@@ -359,8 +374,8 @@ const paint = () => {
       const soon = st.filter(([c]) => c === "soon").length;
       return OPEN_GROUP.bridges
         ? BRIDGES.map(([n, sp]) => tile(n, bridgeState(sp, t), ICO.bridge, n, "bridges"))
-        : [groupTile("Bridges", [worst(st),
-            raised ? `${raised} raised` : soon ? `${soon} soon` : "all passable"], ICO.bridge, "bridges")];
+        : [groupTile("Мосты", [worst(st),
+            raised ? `разведено: ${raised}` : soon ? `скоро: ${soon}` : "все свободны"], ICO.bridge, "bridges")];
     })(),
     ...SHOPS.map(([n, h]) => tile(n, placeState(h, t), ICO.shop)),
     ...PICKUP.map(([n, h]) => tile(n, placeState(h, t), ICO.parcel)),
