@@ -239,16 +239,30 @@ const loadQuote = async asset => {
   const q = await (await fetch(`https://iss.moex.com/iss/engines/futures/markets/forts/securities/${live.secid}.json` +
     "?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST,SETTLEPRICE,LASTTOPREVPRICE")).json();
   const [last, settle, chg] = q.marketdata.data[0] ?? [];
-  quotes[asset] = { price: last || settle, change: chg };
+  const month = quotes[asset]?.month;
+  quotes[asset] = { price: last || settle, change: chg, month };
+
+  // изменение за месяц считаем один раз за загрузку: дневные свечи того же контракта.
+  // именно того же — истёкшая серия обрывается на дате экспирации, и сравнение врало бы
+  if (month === undefined) {
+    const from = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10);
+    const c = (await (await fetch(`https://iss.moex.com/iss/engines/futures/markets/forts/securities/${live.secid}` +
+      `/candles.json?from=${from}&interval=24&iss.meta=off&candles.columns=close`)).json()).candles.data;
+    if (c.length > 1) quotes[asset].month = (c.at(-1)[0] - c[0][0]) / c[0][0] * 100;
+  }
 };
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
   if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>нет данных</span>${icon}</div></div>`;
-  const cls = !q.change ? "flat" : q.change > 0 ? "open" : "shut";
-  const sign = q.change > 0 ? "+" : "";
-  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b>
-    <div class="bot"><div><div class="val">$${q.price.toFixed(2)}</div><span>${sign}${(q.change ?? 0).toFixed(2)}%</span></div>${icon}</div></div>`;
+  // цвет и подпись — по месяцу; суточное изменение уходит в подсказку
+  const m = q.month;
+  const cls = m == null ? "flat" : m > 0 ? "open" : "shut";
+  const pct = v => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
+  const hint = q.change == null ? "" : ` title="за сутки ${pct(q.change)}"`;
+  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"${hint}><b>${name}</b>
+    <div class="bot"><div><div class="val">$${q.price.toFixed(2)}</div>
+    <span>${m == null ? "—" : `мес ${pct(m)}`}</span></div>${icon}</div></div>`;
 };
 
 /* ───────── ISS in real time ───────── */
