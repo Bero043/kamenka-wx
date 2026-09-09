@@ -13,25 +13,31 @@
   body { min-height: 100svh; background: #fff; color: #111; padding: clamp(.4rem, 1.2vw, 1rem);
          display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
 
-  .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-rows: minmax(94px, 1fr); grid-auto-flow: dense;
+  .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-flow: dense;
           grid-template-columns: repeat(4, minmax(0, 1fr)) }
   @media (min-width: 1100px) { .grid { grid-template-columns: repeat(8, minmax(0, 1fr)) } }
 
-  .tile { border-radius: 3px; cursor: pointer; user-select: none; transition: filter .15s; padding: clamp(.4rem, .8vw, .6rem); color: #fff; container-type: inline-size;
-          display: flex; flex-direction: column; justify-content: space-between; gap: .2rem; overflow: hidden }
-  .bot { display: flex; align-items: flex-end; justify-content: space-between; gap: .3rem }
+  .tile { aspect-ratio: 1; border-radius: 50%; cursor: pointer; user-select: none; transition: filter .15s;
+          padding: 13%; color: #fff; container-type: inline-size; overflow: hidden;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25em; text-align: center }
+  /* точка в центре круга */
+  .dot { flex: none; width: 6cqw; max-width: 10px; aspect-ratio: 1; border-radius: 50%; background: currentColor; opacity: .6 }
+  /* растянутая карточка — не круг, а пилюля; квадратная снова круг */
+  .w2:not(.h2) { aspect-ratio: auto; border-radius: 999px }
+  .w2.h2 { aspect-ratio: 1; border-radius: 50% }
+  .bot { display: flex; align-items: center; justify-content: center; gap: .35rem; max-width: 100% }
   .bot > div { min-width: 0 }
   .tile:active { filter: brightness(1.07) }
-  .tile b { min-width: 0; font-weight: 600; font-size: clamp(1rem, 18cqw, 2.3rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
-  .tile span { font-family: "Space Mono", monospace; font-size: clamp(9px, 6cqw, 12.5px); opacity: .9 }
-  .ico { flex: none; width: clamp(19px, 14cqw, 38px); height: auto; opacity: .85 }
+  .tile b { width: 100%; min-width: 0; font-weight: 600; font-size: clamp(.78rem, 13cqw, 1.7rem); line-height: 1.05; letter-spacing: -.01em; hyphens: auto; overflow-wrap: break-word }
+  .tile span { font-family: "Space Mono", monospace; font-size: clamp(8px, 5cqw, 11px); opacity: .9 }
+  .ico { flex: none; width: clamp(14px, 10cqw, 26px); height: auto; opacity: .85 }
 
   .open { background: var(--open) } .soon { background: var(--soon); color: #111 }
   .shut { background: var(--shut) } .idle { background: var(--idle) } .flat { background: var(--flat) }
 
   .w2 { grid-column: span 2 }
   .h2 { grid-row: span 2 }
-  .w2 b { font-size: clamp(1rem, 9cqw, 2.3rem) }
+  .w2 b { width: 100%; font-size: clamp(.8rem, 7cqw, 1.7rem) }
   .w2 .ico { width: clamp(19px, 7cqw, 38px) }
   .val { font-family: "Space Mono", monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
@@ -54,12 +60,11 @@
   @media (max-width: 620px) {
     .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .28rem }
     /* на телефоне текст компактнее */
-    .tile b { font-size: clamp(.85rem, 14cqw, 1.3rem) }
-    .w2 b { font-size: clamp(.85rem, 6.5cqw, 1.3rem) }
+    .tile b { font-size: clamp(.62rem, 12cqw, 1.05rem) }
+    .w2 b { font-size: clamp(.62rem, 6cqw, 1.05rem) }
     .val { font-size: clamp(.68rem, 9cqw, .92rem); line-height: 1.15 }
     .tile span { font-size: clamp(8.5px, 5.5cqw, 11px) }
     .tile { padding: .28rem .34rem; gap: .1rem }
-    .grid { grid-auto-rows: minmax(54px, 1fr) }
   }
 </style>
 
@@ -162,7 +167,7 @@ const bridgeState = (spans, t) => {
 };
 
 const tile = (name, [cls, note], icon, key = name) =>
-  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>${note}</span>${icon}</div></div>`;
+  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
 
 /* ───────── Weather ───────── */
 
@@ -174,12 +179,12 @@ const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rota
 
 const wxTile = (name, c) => {
   const key = `wx:${name}`;
-  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>no data</span>${ICO.cloud}</div></div>`;
+  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.cloud}</div></div>`;
   // red when cold (below +5), windy (7 m/s and up) or raining
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
   const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
-  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b>
+  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i>
     <div class="bot"><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} m/s</div>${ico}</div></div>`;
 };
 
@@ -202,10 +207,10 @@ const loadQuote = async asset => {
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
-  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>no data</span>${icon}</div></div>`;
+  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><i class="dot"></i><div class="bot"><span>no data</span>${icon}</div></div>`;
   const cls = !q.change ? "flat" : q.change > 0 ? "open" : "shut";
   const sign = q.change > 0 ? "+" : "";
-  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b>
+  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"><b>${name}</b><i class="dot"></i>
     <div class="bot"><div><div class="val">$${q.price.toFixed(2)}</div><span>${sign}${(q.change ?? 0).toFixed(2)}%</span></div>${icon}</div></div>`;
 };
 
@@ -225,13 +230,13 @@ const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
   .then(r => r.json()).then(d => { iss = d });
 
 const issTile = () => {
-  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>ISS</b><div class="bot"><span>no data</span>${ICO.iss}</div></div>`;
+  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>ISS</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.iss}</div></div>`;
   const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
   const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
   const away = kmBetween(...HOME, iss.latitude, iss.longitude);
   const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
   const alt = Math.round(iss.altitude);
-  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>ISS</b>
+  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>ISS</b><i class="dot"></i>
     <div class="bot"><div><div class="val">${ns} ${ew}</div>
     <span>${overhead ? `overhead · ${alt} km` : `${alt} km up`}</span></div>${ICO.iss}</div></div>`;
 };
@@ -254,11 +259,11 @@ const loadApod = async () => {
 };
 
 const apodTile = () => {
-  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><div class="bot"><span>no data</span>${ICO.star}</div></div>`;
+  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><i class="dot"></i><div class="bot"><span>no data</span>${ICO.star}</div></div>`;
   const pic = apod.media_type === "image" ? apod.url : apod.thumbnail_url;   // по средам бывает видео
   return `<div class="tile apod ${spanOf("apod")}" data-key="apod"
       style="${pic ? `background-image:url('${pic}')` : ""}">
-    <b>${apod.title}</b>
+    <b>${apod.title}</b><i class="dot"></i>
     <div class="bot"><span><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">NASA · ${apod.date}</a></span>${ICO.star}</div></div>`;
 };
 
