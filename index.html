@@ -13,9 +13,8 @@
   body { min-height: 100svh; background: #fff; color: #111; padding: clamp(.4rem, 1.2vw, 1rem);
          display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
 
-  .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-flow: dense;
-          grid-template-columns: repeat(4, minmax(0, 1fr)) }
-  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(8, minmax(0, 1fr)) } }
+  .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-flow: dense; align-content: center;
+          grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)) }
 
   .tile { aspect-ratio: 1; border-radius: 50%; cursor: pointer; user-select: none; transition: filter .15s;
           padding: 13%; color: #fff; container-type: inline-size; overflow: hidden;
@@ -49,6 +48,13 @@
   .apod > * { position: relative; z-index: 1 }
   .apod a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.5) }
 
+  /* в мелком круге значения и подписи компактнее — иначе трёхстрочные карточки не влезают */
+  @container (max-width: 122px) {
+    .val { font-size: clamp(.58rem, 8cqw, .82rem); line-height: 1.08 }
+    .tile span { font-size: clamp(7.5px, 4.5cqw, 10px) }
+    .dot { max-width: 7px }
+  }
+
   /* три последних городских новости — полосой под сеткой */
   .newsbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .5rem .6rem; border-radius: 3px; background: #f4f4f5;
              font-size: clamp(.68rem, .85vw, .82rem) }
@@ -58,7 +64,7 @@
   .newsbar b { min-width: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 
   @media (max-width: 620px) {
-    .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .28rem }
+    .grid { gap: .28rem }
     /* на телефоне текст компактнее */
     .tile b { font-size: clamp(.62rem, 12cqw, 1.05rem) }
     .w2 b { font-size: clamp(.62rem, 6cqw, 1.05rem) }
@@ -127,11 +133,16 @@ const ICO = {
 const SIZE = { "wx:Kamenka": 1, "wx:Petrogradka": 1, apod: 1 };   // стартовые
 const spanOf = key => ["", "w2", "w2 h2"][SIZE[key] ?? 0];
 
+// мосты и музеи свёрнуты в один круг; клик раскрывает всю группу
+const OPEN_GROUP = { bridges: false, museums: false };
+
 grid.addEventListener("click", e => {
   const card = e.target.closest(".tile");
   if (!card || e.target.closest("a")) return;                     // ссылку внутри не перехватываем
-  const key = card.dataset.key;
-  SIZE[key] = ((SIZE[key] ?? 0) + 1) % 3;
+  const { group, member, key } = card.dataset;
+  if (group) OPEN_GROUP[group] = true;                            // свёрнутый круг → раскрыть
+  else if (member) OPEN_GROUP[member] = false;                    // клик по элементу → свернуть
+  else SIZE[key] = ((SIZE[key] ?? 0) + 1) % 3;                    // обычная карточка → размер
   paint();
 });
 
@@ -166,8 +177,17 @@ const bridgeState = (spans, t) => {
   return ["open", `at ${spans[0].slice(0, 5)}`];
 };
 
-const tile = (name, [cls, note], icon, key = name) =>
-  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"><b>${name}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
+const tile = (name, [cls, note], icon, key = name, member = "") =>
+  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}" ${member ? `data-member="${member}"` : ""}>
+    <b>${name}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
+
+const groupTile = (label, [cls, note], icon, group) =>
+  `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}">
+    <b>${label}</b><i class="dot"></i><div class="bot"><span>${note}</span>${icon}</div></div>`;
+
+// сводка по группе: худший статус задаёт цвет
+const worst = states => states.some(([c]) => c === "shut") ? "shut"
+                     : states.some(([c]) => c === "soon") ? "soon" : "open";
 
 /* ───────── Weather ───────── */
 
@@ -295,12 +315,51 @@ const paintNews = () => {
 
 /* ───────── Render ───────── */
 
+// круг = ширина колонки, поэтому число колонок подбираем под доступную высоту:
+// идём от крупных кругов к мелким и останавливаемся на первом влезающем варианте
+const fitGrid = () => {
+  const gap = parseFloat(getComputedStyle(grid).gap) || 6;
+  const bs = getComputedStyle(document.body);
+  const W = grid.clientWidth;
+  // высоту берём от вьюпорта, а не от сетки: при переполнении сетка растягивается
+  // вместе со страницей и подбор решал бы, что всё влезает
+  const H = innerHeight - parseFloat(bs.paddingTop) - parseFloat(bs.paddingBottom)
+            - newsbar.offsetHeight - (parseFloat(bs.rowGap) || 0);
+  if (!W || H <= 0) return;
+  const cells = [...grid.children].reduce((n, el) =>
+    n + (el.classList.contains("w2") ? 2 : 1) * (el.classList.contains("h2") ? 2 : 1), 0);
+  let cols = 3;
+  for (let c = 3; c <= 12; c++) {
+    const d = (W - gap * (c - 1)) / c;
+    if (d < 68) break;                                  // мельче горошины не нужно
+    cols = c;
+    const rows = Math.ceil(cells / c);
+    if (rows * d + gap * (rows - 1) <= H) break;
+  }
+  grid.style.setProperty("--cols", cols);
+};
+
 const paint = () => {
   const t = nowMsk();
   grid.innerHTML = [
     ...PLACES.map(([name], i) => wxTile(name, wxData?.[i]?.current)),
-    ...MUSEUMS.map(([n, h]) => tile(n, placeState(h, t), ICO.museum)),
-    ...BRIDGES.map(([n, s]) => tile(n, bridgeState(s, t), ICO.bridge)),
+    ...(() => {
+      const st = MUSEUMS.map(([, h]) => placeState(h, t));
+      const open = st.filter(([c]) => c !== "shut").length;
+      return OPEN_GROUP.museums
+        ? MUSEUMS.map(([n, h]) => tile(n, placeState(h, t), ICO.museum, n, "museums"))
+        : [groupTile("Museums", [open ? worst(st.filter(([c]) => c !== "shut")) : "shut",
+            `${open} of ${MUSEUMS.length} open`], ICO.museum, "museums")];
+    })(),
+    ...(() => {
+      const st = BRIDGES.map(([, sp]) => bridgeState(sp, t));
+      const raised = st.filter(([c]) => c === "shut").length;
+      const soon = st.filter(([c]) => c === "soon").length;
+      return OPEN_GROUP.bridges
+        ? BRIDGES.map(([n, sp]) => tile(n, bridgeState(sp, t), ICO.bridge, n, "bridges"))
+        : [groupTile("Bridges", [worst(st),
+            raised ? `${raised} raised` : soon ? `${soon} soon` : "all passable"], ICO.bridge, "bridges")];
+    })(),
     ...SHOPS.map(([n, h]) => tile(n, placeState(h, t), ICO.shop)),
     ...PICKUP.map(([n, h]) => tile(n, placeState(h, t), ICO.parcel)),
     ...BAKERIES.map(([n, h]) => tile(n, placeState(h, t), ICO.bakery)),
@@ -308,7 +367,10 @@ const paint = () => {
     issTile(),
     apodTile()
   ].join("");
+  fitGrid();
 };
+
+addEventListener("resize", fitGrid);
 
 const loadWeather = () => fetch("https://api.open-meteo.com/v1/forecast?latitude=60.045,59.96&longitude=30.243,30.31" +
   "&current=temperature_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms")
