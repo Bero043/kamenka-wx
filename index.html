@@ -10,8 +10,11 @@
   :root { color-scheme: light; font-family: Manrope, "Helvetica Neue", sans-serif;
           --open: #16a34a; --soon: #eab308; --shut: #dc2626; --idle: #9ca3af; --flat: #6b7280 }
   * { box-sizing: border-box; margin: 0; padding: 0 }
-  body { min-height: 100svh; background: #fff; color: #111; padding: clamp(.4rem, 1.2vw, 1rem);
+  body { min-height: 100svh; background: #0b0e13 center/cover fixed no-repeat; color: #fff; padding: clamp(.4rem, 1.2vw, 1rem);
          display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
+
+  /* затемнение поверх снимка */
+  body::before { content: ""; position: fixed; inset: 0; background: rgba(4, 6, 12, .5); z-index: -1 }
 
   .grid { min-height: 0; display: grid; gap: .4rem; grid-auto-flow: dense; align-content: center;
           grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)) }
@@ -44,11 +47,6 @@
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
 
-  /* снимок дня: фото фоном, текст поверх затемнения */
-  .apod { background: #111 center/cover no-repeat; position: relative; text-decoration: none; color: #fff }
-  .apod::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0, 0, 0, .78)) }
-  .apod > * { position: relative; z-index: 1 }
-  .apod a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.5) }
 
   /* в мелком круге значения и подписи компактнее — иначе трёхстрочные карточки не влезают */
   @container (max-width: 82px) {
@@ -57,11 +55,11 @@
   }
 
   /* три последних городских новости — полосой под сеткой */
-  .newsbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .5rem .6rem; border-radius: 3px; background: #f4f4f5;
-             font-size: clamp(.68rem, .85vw, .82rem) }
-  .newsbar a { display: flex; align-items: baseline; gap: .5rem; color: #111; text-decoration: none }
+  .newsbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .5rem .6rem; border-radius: 3px; background: rgba(8, 10, 16, .72);
+             backdrop-filter: blur(10px); font-size: clamp(.68rem, .85vw, .82rem) }
+  .newsbar a { display: flex; align-items: baseline; gap: .5rem; color: #fff; text-decoration: none }
   .newsbar a:hover b { text-decoration: underline }
-  .newsbar time { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(8.5px, .7vw, 10.5px); color: #6b7280; flex: none }
+  .newsbar time { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(8.5px, .7vw, 10.5px); color: rgba(255,255,255,.55); flex: none }
   .newsbar b { min-width: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 
   @media (max-width: 620px) {
@@ -309,13 +307,10 @@ const loadApod = async () => {
   try { localStorage.setItem("apod", JSON.stringify({ fetched: today, data: d })) } catch {}
 };
 
-const apodTile = () => {
-  if (!apod) return `<div class="tile idle apod ${spanOf("apod")}" data-key="apod"><b>APOD</b><div class="bot"><span>нет данных</span>${ICO.star}</div></div>`;
+const paintApod = () => {
+  if (!apod) return;
   const pic = apod.media_type === "image" ? apod.url : apod.thumbnail_url;   // по средам бывает видео
-  return `<div class="tile apod ${spanOf("apod")}" data-key="apod"
-      style="${pic ? `background-image:url('${pic}')` : ""}">
-    <b>${apod.title}</b>
-    <div class="bot"><span><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">NASA · ${apod.date}</a></span>${ICO.star}</div></div>`;
+  if (pic) document.body.style.backgroundImage = `url("${pic}")`;
 };
 
 /* ───────── Три последние городские новости: RSS «Фонтанки» ───────── */
@@ -337,11 +332,16 @@ const loadNews = async () => {
 };
 
 const paintNews = () => {
-  newsbar.innerHTML = stories.length
+  const news = stories.length
     ? stories.map(a => `<a href="${a.link}" target="_blank" rel="noopener">
         <time>${a.date.toLocaleTimeString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })}</time>
         <b>${a.title}</b></a>`).join("")
     : `<a><time>—</time><b>новости недоступны</b></a>`;
+  const shot = apod
+    ? `<a class="shot" href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">
+         <time>NASA</time><b>${apod.title}</b></a>`
+    : "";
+  newsbar.innerHTML = news + shot;
 };
 
 /* ───────── Render ───────── */
@@ -395,8 +395,7 @@ const paint = () => {
     ...PICKUP.map(([n, h]) => tile(n, placeState(h, t), ICO.parcel)),
     ...BAKERIES.map(([n, h]) => tile(n, placeState(h, t), ICO.bakery)),
     ...MARKET.map(([n, a, i]) => quoteTile(n, a, i)),
-    issTile(),
-    apodTile()
+    issTile()
   ].join("");
   fitGrid();
 };
@@ -411,7 +410,7 @@ paint();
 paintNews();
 loadWeather();
 loadIss().then(paint).catch(() => {});
-loadApod().then(paint).catch(() => {});
+loadApod().then(() => { paintApod(); paintNews() }).catch(() => {});
 Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
 loadNews().then(paintNews).catch(() => {});
 
@@ -421,5 +420,5 @@ setInterval(() => {
   Promise.all(MARKET.map(([, a]) => loadQuote(a).catch(() => {}))).then(paint);
   loadNews().then(paintNews).catch(() => {});
 }, 900000);
-setInterval(() => loadApod().then(paint).catch(() => {}), 6 * 36e5);
+setInterval(() => loadApod().then(() => { paintApod(); paintNews() }).catch(() => {}), 6 * 36e5);
 </script>
