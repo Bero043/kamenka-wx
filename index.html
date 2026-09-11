@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root { color-scheme: light; font-family: Manrope, "Helvetica Neue", sans-serif;
-          --open: #16a34a; --soon: #eab308; --shut: #dc2626; --idle: #9ca3af; --flat: #6b7280 }
+          --open: #35d07f; --soon: #f5c542; --shut: #ff5c5c; --idle: #9ca3af; --flat: #cbd5e1 }
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { min-height: 100svh; background: #0b0e13 center/cover fixed no-repeat; color: #fff; padding: clamp(.4rem, 1.2vw, 1rem);
          display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); gap: .4rem }
@@ -21,7 +21,10 @@
 
   .tile { aspect-ratio: 1; border-radius: 50%; cursor: pointer; user-select: none; transition: filter .15s;
           padding: 13%; color: #fff; container-type: inline-size; overflow: hidden;
-          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25em; text-align: center }
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25em; text-align: center;
+          background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .26), rgba(255, 255, 255, .09) 55%, rgba(255, 255, 255, .04));
+          border: 1px solid rgba(255, 255, 255, .22); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+          box-shadow: inset 0 -14px 26px rgba(0, 0, 0, .18); text-shadow: 0 1px 3px rgba(0, 0, 0, .45) }
   /* круги внутри раскрытой группы — мельче обычных */
   .tile[data-member] { width: 74%; place-self: center }
   /* две буквы — набираем крупно; cqw считается от content-box круга, отсюда большой процент */
@@ -36,14 +39,17 @@
   .tile span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(8px, 5cqw, 11px); opacity: .9 }
   .ico { flex: none; width: clamp(14px, 10cqw, 26px); height: auto; opacity: .85 }
 
-  .open { background: var(--open) } .soon { background: var(--soon); color: #111 }
-  .shut { background: var(--shut) } .idle { background: var(--idle) } .flat { background: var(--flat) }
+  /* статус — маленькая точка рядом с подписью */
+  .dot { flex: none; width: clamp(5px, 7cqw, 9px); aspect-ratio: 1; border-radius: 50%; background: var(--flat);
+         box-shadow: 0 0 6px currentColor }
+  .open .dot { background: var(--open) } .soon .dot { background: var(--soon) }
+  .shut .dot { background: var(--shut) } .idle .dot { background: var(--idle) } .flat .dot { background: var(--flat) }
 
   .w2 { grid-column: span 2 }
   .h2 { grid-row: span 2 }
   .w2 b { width: 100%; font-size: clamp(.8rem, 7cqw, 1.7rem) }
   .w2 .ico { width: clamp(19px, 7cqw, 38px) }
-  .val { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(.78rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .3rem }
+  .val { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(.72rem, 1vw, 1.05rem); display: flex; align-items: center; gap: .28rem; white-space: nowrap }
   .val .arr { width: 1em; height: 1em; animation: pulse 2.4s ease-in-out infinite }
   @keyframes pulse { 0%, to { opacity: 1 } 50% { opacity: .45 } }
 
@@ -194,11 +200,11 @@ const tile = (name, [cls, note], icon, key = name, member = "") =>
   `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"
      ${member ? `data-member="${member}" title="${name}"` : ""}>
     <b>${member ? shortLabel(name, GROUP_NAMES[member]()) : name}</b>
-    <div class="bot"><span>${note}</span>${icon}</div></div>`;
+    <div class="bot"><i class="dot"></i><span>${note}</span>${icon}</div></div>`;
 
 const groupTile = (label, [cls, note], icon, group) =>
   `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}">
-    <b>${label}</b><div class="bot"><span>${note}</span>${icon}</div></div>`;
+    <b>${label}</b><div class="bot"><i class="dot"></i><span>${note}</span>${icon}</div></div>`;
 
 // сводка по группе: худший статус задаёт цвет
 const worst = states => states.some(([c]) => c === "shut") ? "shut"
@@ -214,13 +220,13 @@ const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rota
 
 const wxTile = (name, c) => {
   const key = `wx:${name}`;
-  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><span>нет данных</span>${ICO.cloud}</div></div>`;
+  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.cloud}</div></div>`;
   // красный, если холодно (ниже +5), ветрено (7 м/с и больше) или дождь
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
   const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
   return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b>
-    <div class="bot"><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} м/с</div>${ico}</div></div>`;
+    <div class="bot"><i class="dot"></i><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} м/с</div>${ico}</div></div>`;
 };
 
 /* ───────── Commodities: Brent and gold from MOEX ───────── */
@@ -252,14 +258,14 @@ const loadQuote = async asset => {
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
-  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><span>нет данных</span>${icon}</div></div>`;
+  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${icon}</div></div>`;
   // цвет и подпись — по месяцу; суточное изменение уходит в подсказку
   const m = q.month;
   const cls = m == null ? "flat" : m > 0 ? "open" : "shut";
   const pct = v => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
   const hint = q.change == null ? "" : ` title="за сутки ${pct(q.change)}"`;
   return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"${hint}><b>${name}</b>
-    <div class="bot"><div><div class="val">$${q.price.toFixed(2)}</div>
+    <div class="bot"><i class="dot"></i><div><div class="val">$${q.price.toFixed(2)}</div>
     <span>${m == null ? "—" : `мес ${pct(m)}`}</span></div>${icon}</div></div>`;
 };
 
@@ -279,14 +285,14 @@ const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
   .then(r => r.json()).then(d => { iss = d });
 
 const issTile = () => {
-  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>МКС</b><div class="bot"><span>нет данных</span>${ICO.iss}</div></div>`;
+  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>МКС</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.iss}</div></div>`;
   const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
   const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
   const away = kmBetween(...HOME, iss.latitude, iss.longitude);
   const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
   const alt = Math.round(iss.altitude);
   return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>МКС</b>
-    <div class="bot"><div><div class="val">${ns} ${ew}</div>
+    <div class="bot"><i class="dot"></i><div><div class="val">${ns} ${ew}</div>
     <span>${overhead ? `над нами · ${alt} км` : `${alt} км`}</span></div>${ICO.iss}</div></div>`;
 };
 
