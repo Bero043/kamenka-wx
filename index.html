@@ -22,9 +22,11 @@
   .tile { aspect-ratio: 1; border-radius: 50%; cursor: pointer; user-select: none; transition: filter .15s;
           padding: 13%; color: #fff; container-type: inline-size; overflow: hidden;
           display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25em; text-align: center;
-          background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .26), rgba(255, 255, 255, .09) 55%, rgba(255, 255, 255, .04));
-          border: 1px solid rgba(255, 255, 255, .22); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
-          box-shadow: inset 0 -14px 26px rgba(0, 0, 0, .18); text-shadow: 0 1px 3px rgba(0, 0, 0, .45) }
+          background-image: radial-gradient(circle at 32% 26%, rgba(10, 12, 20, .28), rgba(6, 8, 14, .62) 70%), url("moon.jpg");
+          background-size: cover, 165%; background-position: center, var(--moon, center);
+          border: 1px solid rgba(255, 255, 255, .18);
+          box-shadow: inset 0 -16px 30px rgba(0, 0, 0, .35), inset 0 8px 20px rgba(255, 255, 255, .06);
+          text-shadow: 0 1px 3px rgba(0, 0, 0, .75) }
   /* круги внутри раскрытой группы — мельче обычных */
   .tile[data-member] { width: 74%; place-self: center }
   /* две буквы — набираем крупно; cqw считается от content-box круга, отсюда большой процент */
@@ -196,14 +198,21 @@ const shortLabel = (name, peers) => {
   return name.slice(0, 2);
 };
 
+// у каждой луны свой кусок поверхности — иначе все круги одинаковые
+const moonSpot = key => {
+  let h = 0;
+  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return `${20 + (h % 60)}% ${20 + ((h >> 3) % 60)}%`;
+};
+
 const tile = (name, [cls, note], icon, key = name, member = "") =>
-  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}"
+  `<div class="tile ${cls} ${spanOf(key)}" data-key="${key}" style="--moon:${moonSpot(key)}"
      ${member ? `data-member="${member}" title="${name}"` : ""}>
     <b>${member ? shortLabel(name, GROUP_NAMES[member]()) : name}</b>
     <div class="bot"><i class="dot"></i><span>${note}</span>${icon}</div></div>`;
 
 const groupTile = (label, [cls, note], icon, group) =>
-  `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}">
+  `<div class="tile ${cls} ${spanOf(group)}" data-group="${group}" style="--moon:${moonSpot(group)}">
     <b>${label}</b><div class="bot"><i class="dot"></i><span>${note}</span>${icon}</div></div>`;
 
 // сводка по группе: худший статус задаёт цвет
@@ -220,12 +229,12 @@ const arrow = dir => `<svg class="arr" viewBox="0 0 24 24" style="transform:rota
 
 const wxTile = (name, c) => {
   const key = `wx:${name}`;
-  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.cloud}</div></div>`;
+  if (!c) return `<div class="tile idle ${spanOf(key)}" data-key="${key}" style="--moon:${moonSpot(key)}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.cloud}</div></div>`;
   // красный, если холодно (ниже +5), ветрено (7 м/с и больше) или дождь
   const bad = c.temperature_2m < 5 || c.wind_speed_10m >= 7 || c.weather_code >= 51;
   const ico = c.weather_code >= 51 ? ICO.rain : c.weather_code >= 2 ? ICO.cloud : ICO.sun;
   const sign = c.temperature_2m > 0 ? "+" : "";
-  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}"><b>${name}</b>
+  return `<div class="tile ${bad ? "shut" : "open"} ${spanOf(key)}" data-key="${key}" style="--moon:${moonSpot(key)}"><b>${name}</b>
     <div class="bot"><i class="dot"></i><div class="val">${sign}${c.temperature_2m.toFixed(1)}° ${arrow(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} м/с</div>${ico}</div></div>`;
 };
 
@@ -258,13 +267,13 @@ const loadQuote = async asset => {
 
 const quoteTile = (name, asset, icon) => {
   const q = quotes[asset];
-  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${icon}</div></div>`;
+  if (!q?.price) return `<div class="tile idle ${spanOf(name)}" data-key="${name}" style="--moon:${moonSpot(name)}"><b>${name}</b><div class="bot"><i class="dot"></i><span>нет данных</span>${icon}</div></div>`;
   // цвет и подпись — по месяцу; суточное изменение уходит в подсказку
   const m = q.month;
   const cls = m == null ? "flat" : m > 0 ? "open" : "shut";
   const pct = v => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
   const hint = q.change == null ? "" : ` title="за сутки ${pct(q.change)}"`;
-  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"${hint}><b>${name}</b>
+  return `<div class="tile ${cls} ${spanOf(name)}" data-key="${name}"${hint} style="--moon:${moonSpot(name)}"><b>${name}</b>
     <div class="bot"><i class="dot"></i><div><div class="val">$${q.price.toFixed(2)}</div>
     <span>${m == null ? "—" : `мес ${pct(m)}`}</span></div>${icon}</div></div>`;
 };
@@ -285,13 +294,13 @@ const loadIss = () => fetch("https://api.wheretheiss.at/v1/satellites/25544")
   .then(r => r.json()).then(d => { iss = d });
 
 const issTile = () => {
-  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss"><b>МКС</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.iss}</div></div>`;
+  if (!iss) return `<div class="tile idle ${spanOf("iss")}" data-key="iss" style="--moon:${moonSpot("iss")}"><b>МКС</b><div class="bot"><i class="dot"></i><span>нет данных</span>${ICO.iss}</div></div>`;
   const ns = `${Math.abs(iss.latitude).toFixed(1)}°${iss.latitude >= 0 ? "N" : "S"}`;
   const ew = `${Math.abs(iss.longitude).toFixed(1)}°${iss.longitude >= 0 ? "E" : "W"}`;
   const away = kmBetween(...HOME, iss.latitude, iss.longitude);
   const overhead = away <= iss.footprint / 2;      // footprint — диаметр зоны видимости
   const alt = Math.round(iss.altitude);
-  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss"><b>МКС</b>
+  return `<div class="tile ${overhead ? "open" : "flat"} ${spanOf("iss")}" data-key="iss" style="--moon:${moonSpot("iss")}"><b>МКС</b>
     <div class="bot"><i class="dot"></i><div><div class="val">${ns} ${ew}</div>
     <span>${overhead ? `над нами · ${alt} км` : `${alt} км`}</span></div>${ICO.iss}</div></div>`;
 };
